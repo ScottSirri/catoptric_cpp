@@ -1,15 +1,18 @@
-#include "SerialFSM.cpp"
-#include "prep_serial.cpp"
+//#include "SerialFSM.cpp"
+//#include "prep_serial.cpp"
 #include <sys/ioctl.h>
+#include <vector>
 #include <unistd.h>
 
 #define MAX_CMDS_OUT 2
 #define FLUSH_IN_OUT 2
-#define MSG_ELEMS 8
+#define NUM_MSG_ELEMS 8
 #define NUM_MOTORS 2
 
-typedef int[NUM_MOTORS] MotorState;
-typedef int[MSG_ELEMS] Message;
+using namespace std;
+
+typedef int MotorState[NUM_MOTORS];
+typedef int Message[NUM_MSG_ELEMS];
 
 class CatoptricRow {
 
@@ -19,20 +22,21 @@ class CatoptricRow {
 	vector<Message> commandQueue;
     SerialFSM fsm;
 
-    CatoptricRow(rowNumber_in, numMirrors_in, serialPort_in) {
+    CatoptricRow(int rowNumber_in, int numMirrors_in, char *serialPort_in) {
 		rowNumber = rowNumber_in;
 		numMirrors = numMirrors_in;
 
 		// Init Motor States
 		for(int i = 0; i < numMirrors; ++i) {
-		    motorStates[i].push_back( { 0, 0 } );
+            int arr[] = { 0, 0 };
+		    motorStates.push_back( arr );
         }
 
 		// Setup Serial
-		self._setup(serialPort_in);
+		_setup(serialPort_in);
     }
 
-	void _setup(serialPort_in) {
+	void _setup(char *serialPort_in) {
         serial_fd = prep_serial(serialPort_in); // Returns open fd for serial port
         ioctl(serial_fd, TCFLSH, FLUSH_IN_OUT); // Flushes the input and output buffers
         sleep(2); // Why does this function sleep?
@@ -55,23 +59,23 @@ class CatoptricRow {
 
 		if (getCurrentCommandsOut() < MAX_CMDS_OUT && 
                 commandQueue.size() > 0) { // If num pending commands is > 0 and < max limit
-			Message message = commandQueue.pop();
+			Message message = commandQueue.pop_back();
 			sendMessageToArduino(message);
         }
     }
 
     // Is the last param displacement or final position?
-	void stepMotor(int mirror_id, int which_motor, int direction, float c_float) {
-		int c_int = ((int) c_float) * (513.0/360.0);
-		int countLow = ((int) c_int) & 255;
-		int countHigh = (((int) c_int) >> 8) & 255;
+	void stepMotor(int mirror_id, int which_motor, int direction, float delta_pos) {
+		int delta_pos_int = ((int) delta_pos) * (513.0/360.0);
+		int countLow = ((int) delta_pos_int) & 255;
+		int countHigh = (((int) delta_pos_int) >> 8) & 255;
 	    
-		Message message(33, 65, rowNumber, mirror_id, which_motor, direction, countHigh, countLow);
+		Message message = {33, 65, rowNumber, mirror_id, which_motor, direction, countHigh, countLow};
 		commandQueue.push_back(message);
     }
 
 	void sendMessageToArduino(Message message) {
-		for(int i = 0; i < MSG_ELEMS; ++i) {
+		for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
 			char bCurrent = message[i];
             write(serial_fd, &bCurrent, 1);
         }
@@ -79,37 +83,38 @@ class CatoptricRow {
 		fsm.currentCommandsToArduino += 1;
 	}
 
-	void getCurrentCommandsOut() {
+	int getCurrentCommandsOut() {
 		return fsm.currentCommandsToArduino;
     }
 
-	void getCurrentNackCount() {
+	int getCurrentNackCount() {
 		return fsm.nackCount;
     }
 
-	void getCurrentAckCount() {
+	int getCurrentAckCount() {
 		return fsm.ackCount;
     }
 
-    // What is 'command'? What data type?
-	void reorientMirrorAxis(command) {
-		mirror = int(command[1])
-		motor = int(command[2])
-		newState = int(command[3])
-		currentState = motorStates[mirror-1][motor]
+    // What is 'command'? What data type is it supposed to be?
+	void reorientMirrorAxis(Message command) {
+		int mirror = (int) command[1];
+		int motor = (int) command[2];
+		int newState = (int) command[3];
+		int currentState = motorStates[mirror-1][motor];
 		
-		delta = newState - currentState
-		direction = delta < 0 ? 1 : 0;
+		int delta = newState - currentState;
+		int direction = delta < 0 ? 1 : 0;
 
-		self.stepMotor(mirror, motor, direction, abs(delta))
-		self.motorStates[mirror-1][motor] = newState
+		stepMotor(mirror, motor, direction, abs(delta));
+		motorStates[mirror-1][motor] = newState;
     }
 
 	void reset() {
-		for i in range(self.numMirrors):
-			self.stepMotor(i+1, 1, 0, 200)
-			self.stepMotor(i+1, 0, 0, 200)
-			self.motorStates[i][0] = 0
-			self.motorStates[i][1] = 0
+		for(int i = 0; i < numMirrors; ++i) {
+			stepMotor(i+1, 1, 0, 200);
+			stepMotor(i+1, 0, 0, 200);
+			motorStates[i][0] = 0;
+			motorStates[i][1] = 0;
+        }
     }
-}
+};
