@@ -25,12 +25,12 @@ int main() {
 
 class SerialFSM {
 
-    private:
+    public:
 
     char *name; // TODO: unknown purpose?
     char message[MAX_MSG_LEN], *messageEnd; // messageEnd points to the null terminator of message string
     int messageReady;
-    int currentCommandsToArduino; // TODO: unknown purpose?
+    int currentCommandsToArduino; // TODO: unknown purpose? Is need in CatoptricRow.cpp
     int nackCount, ackCount;
     int count, countHigh, countLow; // Character count for message, temporary vars
     int ackX, ackY, ackM; // Ack vars for X, Y, and Mirror
@@ -108,8 +108,6 @@ class SerialFSM {
     }
 
 
-    private:
-
     void resetVariables() {
         ackX = 0;
         ackY = 0;
@@ -127,6 +125,8 @@ class SerialFSM {
         *messageEnd = '\0';
         messageReady = false;
     }
+
+    private:
 
 /* 
  * STATES

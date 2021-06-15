@@ -1,6 +1,7 @@
-//#include "SerialFSM.cpp"
-//#include "prep_serial.cpp"
+#include "SerialFSM.cpp"
+#include "prep_serial.cpp"
 #include <sys/ioctl.h>
+#include <string>
 #include <vector>
 #include <unistd.h>
 
@@ -9,10 +10,27 @@
 #define NUM_MSG_ELEMS 8
 #define NUM_MOTORS 2
 
+#define MSG_MAGIC_NUM '!'
+#define ACK_KEY 'A'
+
 using namespace std;
 
 typedef int MotorState[NUM_MOTORS];
-typedef int Message[NUM_MSG_ELEMS];
+
+struct Message {
+    const int magic_num = MSG_MAGIC_NUM, ack_key = ACK_KEY;
+    int row_num;
+    int mirror_id, which_motor, direction;
+    int count_high, count_low;
+
+    Message(int row_in, int mirror_in, int motor_in, int dir_in, int chigh_in, int clow_in) {
+        row_num = row_in;
+        mirror_id = mirror_in;
+        direction = dir_in;
+        count_high = chigh_in;
+        count_low = clow_in;
+    }
+};
 
 class CatoptricRow {
 
@@ -40,7 +58,8 @@ class CatoptricRow {
         serial_fd = prep_serial(serialPort_in); // Returns open fd for serial port
         ioctl(serial_fd, TCFLSH, FLUSH_IN_OUT); // Flushes the input and output buffers
         sleep(2); // Why does this function sleep?
-		fsm = SerialFSM(rowNumber);
+        const char *row_str = to_string(rowNumber).c_str();
+		fsm = SerialFSM(const_cast<char*>(row_str));
     }
 
 	void resetSerialBuffer() {
@@ -59,7 +78,8 @@ class CatoptricRow {
 
 		if (getCurrentCommandsOut() < MAX_CMDS_OUT && 
                 commandQueue.size() > 0) { // If num pending commands is > 0 and < max limit
-			Message message = commandQueue.pop_back();
+			Message message = commandQueue.back();
+            commandQueue.pop_back();
 			sendMessageToArduino(message);
         }
     }
@@ -70,7 +90,7 @@ class CatoptricRow {
 		int countLow = ((int) delta_pos_int) & 255;
 		int countHigh = (((int) delta_pos_int) >> 8) & 255;
 	    
-		Message message = {33, 65, rowNumber, mirror_id, which_motor, direction, countHigh, countLow};
+		Message message (rowNumber, mirror_id, which_motor, direction, countHigh, countLow);
 		commandQueue.push_back(message);
     }
 
@@ -96,7 +116,7 @@ class CatoptricRow {
     }
 
     // What is 'command'? What data type is it supposed to be?
-	void reorientMirrorAxis(Message command) {
+	/*void reorientMirrorAxis(Message command) {
 		int mirror = (int) command[1];
 		int motor = (int) command[2];
 		int newState = (int) command[3];
@@ -107,7 +127,7 @@ class CatoptricRow {
 
 		stepMotor(mirror, motor, direction, abs(delta));
 		motorStates[mirror-1][motor] = newState;
-    }
+    }*/
 
 	void reset() {
 		for(int i = 0; i < numMirrors; ++i) {
