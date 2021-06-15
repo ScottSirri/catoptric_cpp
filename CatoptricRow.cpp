@@ -5,15 +5,11 @@
 
 #define MAX_CMDS_OUT 2
 #define FLUSH_IN_OUT 2
+#define MSG_ELEMS 8
+#define NUM_MOTORS 2
 
-struct MotorState { int pan, tilt; } // I don't know if this the the right order
-
-struct Message {
-    int a = 33, b = 65;
-    int rowNumber;
-    int y, m, d;
-    int countHigh, countLow;
-}
+typedef int[NUM_MOTORS] MotorState;
+typedef int[MSG_ELEMS] Message;
 
 class CatoptricRow {
 
@@ -29,7 +25,7 @@ class CatoptricRow {
 
 		// Init Motor States
 		for(int i = 0; i < numMirrors; ++i) {
-		    motorStates[i].push_back(MotorState(0, 0));
+		    motorStates[i].push_back( { 0, 0 } );
         }
 
 		// Setup Serial
@@ -58,51 +54,52 @@ class CatoptricRow {
         }
 
 		if (getCurrentCommandsOut() < MAX_CMDS_OUT && 
-                commandQueue.qsize() > 0) { // If num pending commands is > 0 and < max limit
+                commandQueue.size() > 0) { // If num pending commands is > 0 and < max limit
 			Message message = commandQueue.pop();
 			sendMessageToArduino(message);
         }
     }
 
-    // What are any of these parameters?
-	void stepMotor(int y, int m, int d, float c_float) { // Is the last param a float?
-		int c_int = (int) (c_float * (513.0/360.0));
-		int countLow = ((int) c_float) & 255;
-		int countHigh = (((int) c_float) >> 8) & 255;
+    // Is the last param displacement or final position?
+	void stepMotor(int mirror_id, int which_motor, int direction, float c_float) {
+		int c_int = ((int) c_float) * (513.0/360.0);
+		int countLow = ((int) c_int) & 255;
+		int countHigh = (((int) c_int) >> 8) & 255;
 	    
-		Message message(33, 65, rowNumber, y, m, d, countHigh, countLow);
+		Message message(33, 65, rowNumber, mirror_id, which_motor, direction, countHigh, countLow);
 		commandQueue.push_back(message);
     }
 
 	void sendMessageToArduino(Message message) {
-		for i in range(0, len(message)):
-			bCurrent = bytes( [int(message[i])] )
-			self.serial.write(bCurrent)
-		self.fsm.currentCommandsToArduino += 1
+		for(int i = 0; i < MSG_ELEMS; ++i) {
+			char bCurrent = message[i];
+            write(serial_fd, &bCurrent, 1);
+        }
+
+		fsm.currentCommandsToArduino += 1;
 	}
 
 	void getCurrentCommandsOut() {
-		return self.fsm.currentCommandsToArduino
+		return fsm.currentCommandsToArduino;
     }
 
 	void getCurrentNackCount() {
-		return self.fsm.nackCount
+		return fsm.nackCount;
     }
 
 	void getCurrentAckCount() {
-		return self.fsm.ackCount
+		return fsm.ackCount;
     }
 
+    // What is 'command'? What data type?
 	void reorientMirrorAxis(command) {
 		mirror = int(command[1])
 		motor = int(command[2])
 		newState = int(command[3])
-		currentState = self.motorStates[mirror-1][motor]
+		currentState = motorStates[mirror-1][motor]
 		
 		delta = newState - currentState
-		direction = 0
-		if (delta < 0):
-			direction = 1
+		direction = delta < 0 ? 1 : 0;
 
 		self.stepMotor(mirror, motor, direction, abs(delta))
 		self.motorStates[mirror-1][motor] = newState
