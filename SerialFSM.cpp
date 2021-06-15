@@ -122,6 +122,12 @@ class SerialFSM {
         messageReady = false; 
     }
 
+    void clearMessage() {
+        messageEnd = message;
+        *messageEnd = '\0';
+        messageReady = false;
+    }
+
 /* 
  * STATES
  */
