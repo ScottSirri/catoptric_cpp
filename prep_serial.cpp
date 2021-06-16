@@ -7,15 +7,15 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include "prep_serial.hpp"
 
-#define PORT_STR "/dev/ttyUSB0"
 
 
 /* Takes a string containing the serial port to be configured.
  * Creates a termios struct, configures it for output, 
  * and returns the file descriptor.
  */
-int prep_serial(char port_str_in) {
+int prep_serial(char port_str_in[]) {
     char port_str[] = port_str_in;
 
     int serial_port = open(port_str, O_RDWR);

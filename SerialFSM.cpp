@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include "SerialFSM.hpp"
 
 // Define FSMstates
 #define GET_MAGIC_NUM 0
@@ -16,12 +17,11 @@
 #define GET_ACK_M 8
 #define GET_NACK_KEY 9
 
-#define MAX_MSG_LEN 255
 
-int main() {
+/*int main() {
 
     return 0;
-}
+}*/
 
 class SerialFSM {
 
@@ -38,6 +38,17 @@ class SerialFSM {
 
     SerialFSM(char *name_in) {
         name = name_in;
+        //super(SerialFSM, self).__init__()
+        currentCommandsToArduino = 0;
+        nackCount = 0;
+        ackCount = 0;
+
+        currentState = 0;
+        //self.setupStates()
+        resetVariables();
+    }
+
+    SerialFSM() {
         //super(SerialFSM, self).__init__()
         currentCommandsToArduino = 0;
         nackCount = 0;
