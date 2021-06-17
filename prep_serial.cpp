@@ -15,8 +15,7 @@
  * Creates a termios struct, configures it for output, 
  * and returns the file descriptor.
  */
-int prep_serial(char port_str_in[]) {
-    char port_str[] = port_str_in;
+int prep_serial(char port_str[]) {
 
     int serial_port = open(port_str, O_RDWR);
     if(serial_port < 0) {
