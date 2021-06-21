@@ -1,26 +1,81 @@
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
 
-serialPortOrder = { "8543931323035121E170" : 1,
-					"8543931323035130C092" : 2,
-					"85439313230351610262" : 3,
-					"75435353934351D052C0" : 4,
-					"85436323631351509171" : 5,
-					"75435353934351F0C020" : 6,
-					"8543931333035160E081" : 7,
-					"85439313230351818090" : 8,
-					"755333434363519171F0" : 9,
-					"8543931333035160F102" : 10,
-					"8543931323035161B021" : 11,
-					"85439313330351D03160" : 12,
-					"85439303133351716221" : 13,
-					"85436323631351300201" : 14,
-					"75435353934351E07072" : 15,
-					"8543931323035170D0C2" : 16,
-					"854393133303518072A1" : 33,
-				}
+using namespace std;
+
+int main() {
+    return 0;
+}
+
+SerialPort::SerialPort() {
+    portName = string();
+    order = UNDEF_ORDER;
+}
+
+SerialPort::SerialPort(string nameIn, int orderIn) {
+    portName = nameIn;
+    order = orderIn;
+}
 
 
+/* Returns the name of the port with the passed order integer,
+ * if any. Returns empty string otherwise.
+ */
+string SerialPortDict::getPortName(int order) {
+    for(int i = 0; i < dict.size(); ++i) {
+        if(dict[i].order == order) return dict[i].portName;
+    }
+
+    return string();
+}
+
+/* Returns the order integer for the serial port associated
+ * with the passed name. Returns ERR_QUERY_FAILED otherwise.
+ */
+int SerialPortDict::getOrder(string portName) {
+    for(int i = 0; i < dict.size(); ++i) {
+        if(dict[i].portName.compare(portName) == STR_EQ) {
+            return dict[i].order;
+        }
+    }
+
+    return ERR_QUERY_FAILED;
+}
+
+/* Adds a new serial port object the the CatoptricSurface object's
+ * serial port dictionary.
+ */
+void SerialPortDict::addPort(SerialPort port) {
+    dict.push_back(port);
+}
+
+CatoptricSurface::CatoptricSurface() {
+
+    serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
+    serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
+    serialPortOrder.addPort(SerialPort("85439313230351610262", 3));
+    serialPortOrder.addPort(SerialPort("75435353934351D052C0", 4));
+    serialPortOrder.addPort(SerialPort("85436323631351509171", 5));
+    serialPortOrder.addPort(SerialPort("75435353934351F0C020", 6));
+    serialPortOrder.addPort(SerialPort("8543931333035160E081", 7));
+    serialPortOrder.addPort(SerialPort("85439313230351818090", 8));
+    serialPortOrder.addPort(SerialPort("755333434363519171F0", 9));
+    serialPortOrder.addPort(SerialPort("8543931333035160F102", 10));
+    serialPortOrder.addPort(SerialPort("8543931323035161B021", 11));
+    serialPortOrder.addPort(SerialPort("85439313330351D03160", 12));
+    serialPortOrder.addPort(SerialPort("85439303133351716221", 13));
+    serialPortOrder.addPort(SerialPort("85436323631351300201", 14));
+    serialPortOrder.addPort(SerialPort("75435353934351E07072", 15));
+    serialPortOrder.addPort(SerialPort("8543931323035170D0C2", 16));
+    serialPortOrder.addPort(SerialPort("854393133303518072A1", 33));
+
+    serialPorts = getOrderedSerialPorts();
+    numRows = serialPorts.size();
+    setupRowInterfaces();
+    reset();
+}
+
+/*
 class CatoptricSurface():
 
 	def __init__(self):
@@ -209,3 +264,4 @@ class CatoptricController():
 if __name__ == '__main__':
 	c = CatoptricController()
 	c.run()
+*/

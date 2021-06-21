@@ -1,54 +1,59 @@
+#pragma once
 
 #include "CatoptricRow.hpp"
-#include "CatoptricSurface.hpp"
+#include "SerialFSM.hpp"
+#include <string>
+
+#define STR_EQ 0
+#define UNDEF_ORDER -4
+
+#define ERR_QUERY_FAILED -3
 
 struct SerialPort {
-    string 
+    std::string portName;
+    int order; 
 
-serialPortOrder = { "8543931323035121E170" : 1,
-					"8543931323035130C092" : 2,
-					"85439313230351610262" : 3,
-					"75435353934351D052C0" : 4,
-					"85436323631351509171" : 5,
-					"75435353934351F0C020" : 6,
-					"8543931333035160E081" : 7,
-					"85439313230351818090" : 8,
-					"755333434363519171F0" : 9,
-					"8543931333035160F102" : 10,
-					"8543931323035161B021" : 11,
-					"85439313330351D03160" : 12,
-					"85439303133351716221" : 13,
-					"85436323631351300201" : 14,
-					"75435353934351E07072" : 15,
-					"8543931323035170D0C2" : 16,
-					"854393133303518072A1" : 33,
-				}
+    SerialPort();
+    SerialPort(std::string nameIn, int orderIn);
+};
 
+class SerialPortDict {
+    
+    private:
+        std::vector<SerialPort> dict;
 
-class CatoptricSurface():
+    public:
+        std::string getPortName(int order);
+        int getOrder(std::string portName);
+        void addPort(SerialPort port);
+};
 
-	def __init__(self):
-		self.serialPorts = self.getOrderedSerialPorts()
-		self.numRows = len(self.serialPorts)
-		self.rowInterfaces = dict()
+class CatoptricSurface {
 
-		self.setupRowInterfaces()
-		self.reset() 
+    SerialPortDict serialPortOrder;
+    vector<SerialPort> serialPorts;
+    int numRows;
 
 
-	# Initializes a Row Interface for each available arduino
-	def setupRowInterfaces(self):
+    CatoptricSurface();
+	// Initializes a Row Interface for each available arduino
+    void setupRowInterfaces();
+	/* Returns a list of serial ports corresponding to Arduionos, ordered 
+     * according to the serialPortOrder dictionary
+     */
+    std::vector<SerialPort> getOrderedSerialPorts();
+	void reset();
+	void getCSV(std::string path);
+	void updateByCSV(std::string path);
+	void run();
+};
 
-		for sP in self.serialPorts:
-			name = serialPortOrder[sP.serial_number]
-			port = sP.device
+class CatoptricController {
 
-			rowLength = 0
-			if (name >= 1 and name < 12):
-				rowLength = 16						### THIS SHOULD BE 16, NOT 10 ###
-			elif (name >= 12 and name < 17):
-				rowLength = 24
-			elif (name >= 17 and name < 28):
-				rowLength = 17
-			elif (name >= 28 and name < 33):
-				rowLength = 25
+    CatoptricController();
+
+	void checkForNewCSV();
+	void run();
+};
+
+int main();
