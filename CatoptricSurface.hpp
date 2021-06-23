@@ -9,6 +9,7 @@
 
 #define ERR_QUERY_FAILED -3
 #define NO_DEVICES 512
+#define SERIAL_NUM_LEN 20
 
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)
@@ -16,6 +17,7 @@ struct SerialPort {
     std::string device; // Path to port (symlink in /dev/serial/by-id)
 
     SerialPort();
+    SerialPort(std::string serialIn, int rowIn);
     SerialPort(std::string serialIn, int rowIn, std::string deviceIn);
 };
 
@@ -30,9 +32,15 @@ class SerialPortDict {
         void addPort(SerialPort port);
 };
 
+struct serialComp {
+    bool operator() (SerialPort a, SerialPort b) {
+        return a.serialNumber.compare(b.serialNumber) < 0;
+    }
+} serialCompObj;
+
 class CatoptricSurface {
 
-    const std::string SERIAL_INFO_PREFIX = "usb-Arduino__www.arduino.cc__0043_";
+    static std::string SERIAL_INFO_PREFIX;
 
     SerialPortDict serialPortOrder;
     std::vector<SerialPort> serialPorts;

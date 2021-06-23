@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <fstream>
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
 
@@ -18,6 +20,11 @@ SerialPort::SerialPort(string numIn, int rowIn, string deviceIn) {
     device = deviceIn;
 }
 
+SerialPort::SerialPort(string numIn, int rowIn) {
+    serialNumber = numIn;
+    row = rowIn;
+    device = string();
+}
 
 /* Returns the name of the port with the passed order integer,
  * if any. Returns empty string otherwise.
@@ -52,6 +59,8 @@ void SerialPortDict::addPort(SerialPort port) {
 
 CatoptricSurface::CatoptricSurface() {
 
+    SERIAL_INFO_PREFIX = "usb-Arduino__www.arduino.cc__0043_";
+
     serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
     serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
     serialPortOrder.addPort(SerialPort("85439313230351610262", 3));
@@ -79,7 +88,7 @@ CatoptricSurface::CatoptricSurface() {
 vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     string path = "/dev/serial/by-id";
     string cmd = "ls " + path + " > .serialInfo";
-    int ret = system(cmd);
+    int ret = system(cmd.c_str());
     if(ret == NO_DEVICES) {
         printf("No devices detected in /dev/serial/by-id\n");
         return vector<SerialPort>();
@@ -93,17 +102,35 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
         string serialInfoLine;
         while(getline(serialInfoFile, serialInfoLine)) {
             string serialNumber;
-            // TODO : Parse line
             
-            lineTmp = string(serialInfoLine);
-            if(lineTmp.
+            /* Format of Arduino Uno's file name in /dev/serial/by-id is
+             *     usb-Arduino__www.arduino.cc__0043_XXXXXXXXXXXXXXXXXXX-YYYY
+             * for serial number X's
+             */
+
+            if(serialInfoLine.find(SERIAL_INFO_PREFIX) != string::npos) {
+                serialNumber = serialInfoLine.substr(SERIAL_INFO_PREFIX.size(), SERIAL_NUM_LEN);
+            }
 
             int row = serialPortOrder.getRow(serialNumber);
-            serialPorts.push_back(SerialPort(serialNumber, row, serialInfoLine));
+            if(row == ERR_QUERY_FAILED) {
+                printf("Unrecognized device: serialNumber %s\n", serialNumber.c_str());
+            } else {
+                serialPorts.push_back(SerialPort(serialNumber, row, serialInfoLine));
+            }
         }
 
     }
     serialInfoFile.close();
+
+    // Sort serial ports by their serial number
+    sort(serialPorts.begin(), serialPorts.end(), serialCompObj);
+
+    for(SerialPort sp : serialPorts) {
+        printf("Arduino #%s : Row #%d\n", sp.serialNumber.c_str(), sp.row);
+    }
+
+    return serialPorts;
 }
 
 /*
