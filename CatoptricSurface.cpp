@@ -8,22 +8,23 @@ int main() {
 }
 
 SerialPort::SerialPort() {
-    portName = string();
-    order = UNDEF_ORDER;
+    serialNumber = string();
+    row = UNDEF_ORDER;
 }
 
-SerialPort::SerialPort(string nameIn, int orderIn) {
-    portName = nameIn;
-    order = orderIn;
+SerialPort::SerialPort(string numIn, int rowIn, string deviceIn) {
+    serialNumber = numIn;
+    row = rowIn;
+    device = deviceIn;
 }
 
 
 /* Returns the name of the port with the passed order integer,
  * if any. Returns empty string otherwise.
  */
-string SerialPortDict::getPortName(int order) {
+string SerialPortDict::getSerialNumber(int row) {
     for(int i = 0; i < dict.size(); ++i) {
-        if(dict[i].order == order) return dict[i].portName;
+        if(dict[i].row == row) return dict[i].serialNumber;
     }
 
     return string();
@@ -32,10 +33,10 @@ string SerialPortDict::getPortName(int order) {
 /* Returns the order integer for the serial port associated
  * with the passed name. Returns ERR_QUERY_FAILED otherwise.
  */
-int SerialPortDict::getOrder(string portName) {
+int SerialPortDict::getRow(string serialNumber) {
     for(int i = 0; i < dict.size(); ++i) {
-        if(dict[i].portName.compare(portName) == STR_EQ) {
-            return dict[i].order;
+        if(dict[i].serialNumber.compare(serialNumber) == STR_EQ) {
+            return dict[i].row;
         }
     }
 
@@ -73,6 +74,36 @@ CatoptricSurface::CatoptricSurface() {
     numRows = serialPorts.size();
     setupRowInterfaces();
     reset();
+}
+
+vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
+    string path = "/dev/serial/by-id";
+    string cmd = "ls " + path + " > .serialInfo";
+    int ret = system(cmd);
+    if(ret == NO_DEVICES) {
+        printf("No devices detected in /dev/serial/by-id\n");
+        return vector<SerialPort>();
+    }
+
+    vector<SerialPort> serialPorts;
+
+    fstream serialInfoFile;
+    serialInfoFile.open(".serialInfo", ios::in);
+    if(serialInfoFile.is_open()) {
+        string serialInfoLine;
+        while(getline(serialInfoFile, serialInfoLine)) {
+            string serialNumber;
+            // TODO : Parse line
+            
+            lineTmp = string(serialInfoLine);
+            if(lineTmp.
+
+            int row = serialPortOrder.getRow(serialNumber);
+            serialPorts.push_back(SerialPort(serialNumber, row, serialInfoLine));
+        }
+
+    }
+    serialInfoFile.close();
 }
 
 /*

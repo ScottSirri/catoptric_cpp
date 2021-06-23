@@ -8,13 +8,15 @@
 #define UNDEF_ORDER -4
 
 #define ERR_QUERY_FAILED -3
+#define NO_DEVICES 512
 
 struct SerialPort {
-    std::string portName;
-    int order; 
+    std::string serialNumber;   // Serial number (how to obtain in C++?)
+    int row;            // Row of Arduino according to serialPortOrder
+    std::string device; // Path to port (symlink in /dev/serial/by-id)
 
     SerialPort();
-    SerialPort(std::string nameIn, int orderIn);
+    SerialPort(std::string serialIn, int rowIn, std::string deviceIn);
 };
 
 class SerialPortDict {
@@ -23,15 +25,17 @@ class SerialPortDict {
         std::vector<SerialPort> dict;
 
     public:
-        std::string getPortName(int order);
-        int getOrder(std::string portName);
+        std::string getSerialNumber(int row);
+        int getRow(std::string serialNumber);
         void addPort(SerialPort port);
 };
 
 class CatoptricSurface {
 
+    const std::string SERIAL_INFO_PREFIX = "usb-Arduino__www.arduino.cc__0043_";
+
     SerialPortDict serialPortOrder;
-    vector<SerialPort> serialPorts;
+    std::vector<SerialPort> serialPorts;
     int numRows;
 
 
