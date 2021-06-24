@@ -55,10 +55,9 @@ class CatoptricRow {
     // What is 'command'? What data type is it supposed to be?
 	// TODO : `void reorientMirrorAxis(Message command); 
 
-	void reset();
-
     public:
         CatoptricRow();
         CatoptricRow(int rowNumber_in, int numMirrors_in, 
                 const char *serial_port_in); 
+	    void reset();
 };

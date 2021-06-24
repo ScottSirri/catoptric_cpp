@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <sstream>
 #include <fstream>
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
@@ -171,10 +172,37 @@ void CatoptricSurface::reset() {
     run();
 }
 
-void CatoptricSurface::getCSV(string path) {
-   csvData.clear(); // Delete old CSV data
+vector<string> getNextLineAndSplitIntoTokens(istream& str) {
+    vector<string> result;
+    string line;
+    getline(str,line);
 
-    
+    stringstream lineStream(line);
+    string cell;
+
+    while(getline(lineStream, cell, ',')) {
+        result.push_back(cell);
+    }
+
+    return result;
+}
+
+void CatoptricSurface::getCSV(string path) {
+    csvData.clear(); // Delete old CSV data
+
+    bool readData = false;
+
+    ifstream fs;
+    fs.open(path.c_str(), ios_base::in);
+    while(!fs.eof()) {
+        readData = true;
+        // Get vector of next line's elements
+        vector<string> nextLine = getNextLineAndSplitIntoTokens(fs);
+        // Append the elements of the next line onto csvData
+        csvData.insert(csvData.end(), nextLine.begin(), nextLine.end());
+   }
+
+   if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
 }
 
 /*
