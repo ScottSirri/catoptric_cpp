@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "SerialFSM.hpp"
 
-SerialFSM::SerialFSM(char *name_in) {
+SerialFSM::SerialFSM(const char *name_in) {
     name = name_in;
     //super(SerialFSM, self).__init__()
     currentCommandsToArduino = 0;

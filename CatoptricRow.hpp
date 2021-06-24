@@ -28,8 +28,8 @@ struct Message {
     int mirror_id, which_motor, direction;
     int count_high, count_low;
 
-    Message(int row_in, int mirror_in, int motor_in, int dir_in, int chigh_in, 
-            int clow_in);
+    Message(int row_in, int mirror_in, int motor_in, int dir_in, 
+            int chigh_in, int clow_in);
 
     std::vector<char> to_vec(); 
 };
@@ -42,11 +42,11 @@ class CatoptricRow {
     std::vector<Message> commandQueue;
     SerialFSM fsm;
 
-    CatoptricRow(int rowNumber_in, int numMirrors_in, char *serial_port_in); 
-	int _setup(char *serial_port_in);
+	int _setup(const char *serial_port_in);
 	int resetSerialBuffer();
 	void update();
-	void step_motor(int mirror_id, int which_motor, int direction, float delta_pos); 
+	void step_motor(int mirror_id, int which_motor, int direction, 
+            float delta_pos); 
 	void sendMessageToArduino(Message message);
 	int getCurrentCommandsOut(); 
 	int getCurrentNackCount();
@@ -56,4 +56,9 @@ class CatoptricRow {
 	//void reorientMirrorAxis(Message command); 
 
 	void reset();
+
+    public:
+        CatoptricRow();
+        CatoptricRow(int rowNumber_in, int numMirrors_in, 
+                const char *serial_port_in); 
 };

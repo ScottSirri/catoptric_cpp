@@ -40,7 +40,10 @@ vector<char> Message::to_vec() {
     return vec;
 }
 
-CatoptricRow::CatoptricRow(int rowNumber_in, int numMirrors_in, char *serial_port_in) {
+CatoptricRow::CatoptricRow() {}
+
+CatoptricRow::CatoptricRow(int rowNumber_in, int numMirrors_in, 
+        const char *serial_port_in) {
 	rowNumber = rowNumber_in;
 	numMirrors = numMirrors_in;
 
@@ -55,10 +58,10 @@ CatoptricRow::CatoptricRow(int rowNumber_in, int numMirrors_in, char *serial_por
 
     string row_str = to_string(rowNumber);
     const char *row_cstr = row_str.c_str();
-	fsm = SerialFSM(const_cast<char*>(row_cstr));
+	fsm = SerialFSM(row_cstr);
 }
 
-int CatoptricRow::_setup(char *serial_port_in) {
+int CatoptricRow::_setup(const char *serial_port_in) {
     serial_fd = prep_serial(serial_port_in); // Returns open fd for serial port
     if(tcflush(serial_fd, TCIOFLUSH) < 0) {
         printf("tcflush error: %s\n", strerror(errno));

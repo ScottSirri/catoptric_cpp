@@ -60,6 +60,7 @@ void SerialPortDict::addPort(SerialPort port) {
 CatoptricSurface::CatoptricSurface() {
 
     SERIAL_INFO_PREFIX = "usb-Arduino__www.arduino.cc__0043_";
+    //rowInterfaces = CatoptricRow[NUM_ROWS];
 
     serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
     serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
@@ -82,7 +83,6 @@ CatoptricSurface::CatoptricSurface() {
     serialPorts = getOrderedSerialPorts();
     numRowsConnected = serialPorts.size();
     
-    rowInterfaces = CatoptricRow[NUM_ROWS];
     setupRowInterfaces();
     reset();
 }
@@ -138,7 +138,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     return serialPorts;
 }
 
-vector<CatoptricRow> setupRowInterfaces() {
+void CatoptricSurface::setupRowInterfaces() {
     for(SerialPort sp : serialPorts) {
         int row = sp.row;
         string port = sp.device;
@@ -146,11 +146,11 @@ vector<CatoptricRow> setupRowInterfaces() {
         int rowLength = 0;
         if(row >= 1 && row < 12) {
             rowLength = 16;
-        } else if(name >= 12 && name < 17) {
+        } else if(row >= 12 && row < 17) {
             rowLength = 24;
-        } else if(name >= 17 && row < 28) {
+        } else if(row >= 17 && row < 28) {
             rowLength = 17;
-        } else if(name >= 28 && row < 33) {
+        } else if(row >= 28 && row < 33) {
             rowLength = 25;
         } else {    // Test setup arduinos
             rowLength = 2;
@@ -158,8 +158,7 @@ vector<CatoptricRow> setupRowInterfaces() {
 
 		printf(" -- Initializing Catoptric Row %d with %d mirrors", 
                 row, rowLength);
-	    rowInterfaces[row] = CatoptricRow(name, rowLength, port)
-        
+	    rowInterfaces[row] = CatoptricRow(row, rowLength, port.c_str());
     }
 }
 

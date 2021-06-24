@@ -47,12 +47,12 @@ class CatoptricSurface {
     SerialPortDict serialPortOrder;
     std::vector<SerialPort> serialPorts;
     int numRowsConnected;
-    CatoptricRow rowInterfaces[];
+    CatoptricRow rowInterfaces[NUM_ROWS];
 
 
     CatoptricSurface();
 	// Initializes a Row Interface for each available arduino
-    std::vector<CatoptricRow> setupRowInterfaces();
+    void setupRowInterfaces();
 	/* Returns a list of serial ports corresponding to Arduionos, ordered 
      * according to the serialPortOrder dictionary
      */
