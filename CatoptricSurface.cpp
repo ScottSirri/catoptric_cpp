@@ -80,7 +80,9 @@ CatoptricSurface::CatoptricSurface() {
     serialPortOrder.addPort(SerialPort("854393133303518072A1", 33));
 
     serialPorts = getOrderedSerialPorts();
-    numRows = serialPorts.size();
+    numRowsConnected = serialPorts.size();
+    
+    rowInterfaces = CatoptricRow[NUM_ROWS];
     setupRowInterfaces();
     reset();
 }
@@ -109,14 +111,17 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
              */
 
             if(serialInfoLine.find(SERIAL_INFO_PREFIX) != string::npos) {
-                serialNumber = serialInfoLine.substr(SERIAL_INFO_PREFIX.size(), SERIAL_NUM_LEN);
+                serialNumber = serialInfoLine.substr(SERIAL_INFO_PREFIX.size(),
+                        SERIAL_NUM_LEN);
             }
 
             int row = serialPortOrder.getRow(serialNumber);
             if(row == ERR_QUERY_FAILED) {
-                printf("Unrecognized device: serialNumber %s\n", serialNumber.c_str());
+                printf("Unrecognized device: serialNumber %s\n", 
+                        serialNumber.c_str());
             } else {
-                serialPorts.push_back(SerialPort(serialNumber, row, serialInfoLine));
+                serialPorts.push_back(SerialPort(serialNumber, row, 
+                            serialInfoLine));
             }
         }
 
@@ -133,68 +138,33 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     return serialPorts;
 }
 
+vector<CatoptricRow> setupRowInterfaces() {
+    for(SerialPort sp : serialPorts) {
+        int row = sp.row;
+        string port = sp.device;
+
+        int rowLength = 0;
+        if(row >= 1 && row < 12) {
+            rowLength = 16;
+        } else if(name >= 12 && name < 17) {
+            rowLength = 24;
+        } else if(name >= 17 && row < 28) {
+            rowLength = 17;
+        } else if(name >= 28 && row < 33) {
+            rowLength = 25;
+        } else {    // Test setup arduinos
+            rowLength = 2;
+        }
+
+		printf(" -- Initializing Catoptric Row %d with %d mirrors", 
+                row, rowLength);
+	    rowInterfaces[row] = CatoptricRow(name, rowLength, port)
+        
+    }
+}
+
 /*
 class CatoptricSurface():
-
-	def __init__(self):
-		self.serialPorts = self.getOrderedSerialPorts()
-		self.numRows = len(self.serialPorts)
-		self.rowInterfaces = dict()
-
-		self.setupRowInterfaces()
-		self.reset() 
-
-
-	# Initializes a Row Interface for each available arduino
-	def setupRowInterfaces(self):
-
-		for sP in self.serialPorts:
-			name = serialPortOrder[sP.serial_number]
-			port = sP.device
-
-			rowLength = 0
-			if (name >= 1 and name < 12):
-				rowLength = 16						### THIS SHOULD BE 16, NOT 10 ###
-			elif (name >= 12 and name < 17):
-				rowLength = 24
-			elif (name >= 17 and name < 28):
-				rowLength = 17
-			elif (name >= 28 and name < 33):
-				rowLength = 25
-			else: #Test setup arduinos
-				rowLength = 2
-
-			print (" -- Initializing Catoptric Row %d with %d mirrors" % (name, rowLength))
-
-			self.rowInterfaces[name] = CatoptricRow(name, rowLength, port)
-	
-
-	# Returns a list of serial ports, ordered according to the serialPortOrder dictionary
-	def getOrderedSerialPorts(self):
-
-		# Get all serial ports
-		allPorts = serial.tools.list_ports.comports()
-		#print(allPorts)
-		
-		# Get only ports with arduinos attached
-		arduinoPorts = [p for p in allPorts if p.pid == 67]
-		print (" -- %d Arduinos Found:" % len(arduinoPorts)) 
-
-		# Sort arduino ports by row
-		try:
-			arduinoPorts.sort(key= lambda x: serialPortOrder[x.serial_number])
-		except:
-			print(" -- One or more arduino serial number unrecognized")
-        
-		for a in arduinoPorts:
-			try:
-				print ("    Arduino #%s : Row #%d" % (a.serial_number, serialPortOrder[a.serial_number]))
-			except:
-				print ("    Arduino #%s : Unrecognized Serial Number" % a.serial_number)
-
-		return arduinoPorts
-	
-
 	def reset(self):
 		print (" -- Resetting all mirrors to default position")
 		for r in self.rowInterfaces:
