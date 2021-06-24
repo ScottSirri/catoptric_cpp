@@ -205,21 +205,22 @@ void CatoptricSurface::getCSV(string path) {
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
 }
 
+void updateByCSV(string path) {
+    getCSV(path);
+
+    for(CatoptricRow cr : rowInterfaces) {
+        cr.resetSerialBuffer();
+    }
+
+    for(int i = 0; i < csvData.size(); i += 4) {
+        if(csvData[i]
+    }
+
+    run();
+}
+
 /*
 class CatoptricSurface():
-	def getCSV(self, path):
-		# Delete old CSV data
-		self.csvData  = []
-
-		# Read in CSV contents
-		with open(path, newline='') as csvfile:
-			reader = csv.reader(csvfile, delimiter=',')
-			for row in reader:
-				x = []
-				for i in range(0, len(row)):
-					x.append(row[i])
-				self.csvData.append(x)
-	
 
 	def updateByCSV(self, path):
 		self.getCSV(path)
