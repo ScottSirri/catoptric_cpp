@@ -48,6 +48,7 @@ class CatoptricSurface {
     std::vector<SerialPort> serialPorts;
     int numRowsConnected;
     CatoptricRow rowInterfaces[NUM_ROWS];
+    std::string csvData;
 
 
     CatoptricSurface();

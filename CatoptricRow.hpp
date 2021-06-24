@@ -53,7 +53,7 @@ class CatoptricRow {
 	int getCurrentAckCount();
 
     // What is 'command'? What data type is it supposed to be?
-	//void reorientMirrorAxis(Message command); 
+	// TODO : `void reorientMirrorAxis(Message command); 
 
 	void reset();
 

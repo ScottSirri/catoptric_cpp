@@ -156,22 +156,29 @@ void CatoptricSurface::setupRowInterfaces() {
             rowLength = 2;
         }
 
-		printf(" -- Initializing Catoptric Row %d with %d mirrors", 
+		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
                 row, rowLength);
 	    rowInterfaces[row] = CatoptricRow(row, rowLength, port.c_str());
     }
 }
 
+void CatoptricSurface::reset() {
+    printf(" -- Resetting all mirrors to default position\n");
+    for(CatoptricRow cr : rowInterfaces) {
+        cr.reset(); // Reset each row
+    }
+
+    run();
+}
+
+void CatoptricSurface::getCSV(string path) {
+   csvData.clear(); // Delete old CSV data
+
+    
+}
+
 /*
 class CatoptricSurface():
-	def reset(self):
-		print (" -- Resetting all mirrors to default position")
-		for r in self.rowInterfaces:
-			self.rowInterfaces[r].reset()
-		
-		self.run()
-
-
 	def getCSV(self, path):
 		# Delete old CSV data
 		self.csvData  = []
