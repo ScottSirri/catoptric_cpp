@@ -194,7 +194,7 @@ void CatoptricSurface::getCSV(string path) {
 
     ifstream fs;
     fs.open(path.c_str(), ios_base::in);
-    while(!fs.eof()) {
+    while(fs.good() && !fs.eof()) {
         readData = true;
         // Get vector of next line's elements
         vector<string> nextLine = getNextLineAndSplitIntoTokens(fs);
@@ -205,15 +205,34 @@ void CatoptricSurface::getCSV(string path) {
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
 }
 
-void updateByCSV(string path) {
+void CatoptricSurface::updateByCSV(string path) {
     getCSV(path);
 
     for(CatoptricRow cr : rowInterfaces) {
         cr.resetSerialBuffer();
     }
 
-    for(int i = 0; i < csvData.size(); i += 4) {
-        if(csvData[i]
+    int rowRead = -1;
+    for(int csvLineInd = 0; csvLineInd < csvData.size(); csvLineInd += 4) {
+        try {
+            rowRead = stoi(csvData[csvLineInd]);
+        } catch(...) {
+            printf("updateByCSV parsing error in stoi\n");
+            return;
+        }
+
+        for(int rowInd = 0; rowInd < rowInterfaces.size(); ++rowInd) {
+            if(rowRead == rowInterfaces[rowInd].row) {
+                foundRow = true;
+                rowInterfaces[rowRead].reorientMirrorAxis();
+                break;
+            }
+        }
+
+        if(!foundRow) {
+            printf("Line %d of CSV is addressed to a row that does not exist
+                    : %d", csvLineInd, rowRead);
+        }
     }
 
     run();
