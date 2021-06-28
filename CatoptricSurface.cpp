@@ -320,8 +320,12 @@ void CatoptricController::run() {
         if(0 == userInput.compare("reset")) {
             surface.reset();
             printf(" -- Reset Complete\n");
-        } else if() {
-
+        } else if(csvList.size() > 0 && 0 == userInput.compare("run")) {
+            printf(" -- Running \'%s\'\n", csv);
+            surface.updateByCSV(csv); // TODO : Need to alter csv before?
+            printf(" -- \'%s\' ran successfully\n", csv);
+            int archiveLength = ;// TODO
+            
         }
 
 
