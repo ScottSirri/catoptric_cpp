@@ -11,6 +11,7 @@
 #define NO_DEVICES 512
 #define SERIAL_NUM_LEN 20
 #define NUM_ROWS 32
+#define CONTROLLER_RUNNING 1
 
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)
@@ -70,7 +71,7 @@ class CatoptricController {
 
     CatoptricController();
 
-	void checkForNewCSV();
+    std::vector<std::string> checkForNewCSV();
 	void run();
 };
 

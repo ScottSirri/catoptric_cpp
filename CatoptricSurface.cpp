@@ -1,3 +1,5 @@
+#include <iostream>
+#include <filesystem>
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
@@ -279,22 +281,55 @@ CatoptricController::CatoptricController() {
     surface = CatoptricSurface();
 }
 
-CatoptricController::checkForNewCSV() {
-    string directory = "csv/new";
+vector<string> CatoptricController::checkForNewCSV() {
+    string directoryStr = "csv/new";
+    vector<string> newCSVs;
+    
+    string filePath, ending = ".csv";
+    // For each file in directory csv/new
+    for (const auto & entry : filesystem::directory_iterator(directoryStr)) {
+        filePath = entry.path();
+        // Check if each file's name ends in CSV extension
+        if(0 == filePath.compare(filePath.length() - ending.length(), 
+                    ending.length(), ending)) {
+            newCSVs.push_back(filePath);
+        }
+    }
+
+    return newCSVs;
+}
+
+void CatoptricController::run() {
+    while(CONTROLLER_RUNNING) {
+        printf("\n-------------------------\n\n");
+        string csv = "";
+        vector<string> csvList = checkForNewCSV();
+        string inputMessage = "\'Reset\' mirrors or uploa a file to run: ";
+
+        if(csvList.size() > 0) {
+            csv = csvList[0];
+            printf(" -- Found csv file \'%s\'\n", csv);
+            inputMessage = "\'Reset\' mirrors or \'Run\' file: ";
+        }
+
+        string userInput;
+        printf("%s", inputMessage);
+        cin >> userInput;
+        printf("\n\n");
+        userInput = userInput.tolower();
+        if(0 == userInput.compare("reset")) {
+            surface.reset();
+            printf(" -- Reset Complete\n");
+        } else if() {
+
+        }
+
+
+    }
 }
 
 /*
 class CatoptricController():
-	def __init__(self):
-		self.surface = CatoptricSurface()
-
-	def checkForNewCSV(self):
-		directory = 'csv/new'
-		newCSVs = [os.path.join(directory, name) for name in os.listdir(directory) 
-			if os.path.isfile(os.path.join(directory, name)) 
-			and name.endswith('.csv')]
-		return newCSVs
-
 
 	def run(self):
 		while True:
