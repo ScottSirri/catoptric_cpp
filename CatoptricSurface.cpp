@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::seconds
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
 
@@ -238,62 +240,50 @@ void CatoptricSurface::updateByCSV(string path) {
     run();
 }
 
+void CatoptricSurface::run() {
+    printf("\n\n");
+
+    int commandsOut = 1;
+    int updates = 0;
+    while(commandsOut > 0) {
+        for(CatoptricRow& cr : rowInterfaces) cr.update();
+
+        commandsOut = 0;
+        int commandsQueue = 0;
+        int ackCount = 0;
+        int nackCount = 0;
+        
+        for(CatoptricRow& cr : rowInterfaces) {
+            commandsOut += cr.getCurrentCommandsOut();
+            ackCount += cr.getCurrentAckCount();
+            nackCount += cr.getCurrentNackCount();
+            commandsQueue += cr.commandQueue.size();
+        }
+        updates++;
+        // TODO: Do we really need to sleep here? Why, and is this a good way?
+        this_thread::sleep_for (chrono::seconds(1));
+        printf("\r%d commands out | %d commands in queue | %d acks | %d nacks 
+                | %d cycles \r", commandsOut, commandsQueue, ackCount, 
+                nackCount, updates);
+
+        for(CatoptricRow& cr : rowInterfaces) {
+            cr.fsm.ackCount = 0;
+            cr.fsm.nackCount = 0;
+        }
+
+        printf("\n\n");
+    }
+}
+
+CatoptricController::CatoptricController() {
+    surface = CatoptricSurface();
+}
+
+CatoptricController::checkForNewCSV() {
+    string directory = "csv/new";
+}
+
 /*
-class CatoptricSurface():
-
-	def updateByCSV(self, path):
-		self.getCSV(path)
-
-		for r in self.rowInterfaces:
-			self.rowInterfaces[r].resetSerialBuffer()
-
-		for i in range(0, len(self.csvData)):
-			line = self.csvData[i]
-			if (int(line[0]) in self.rowInterfaces):
-				self.rowInterfaces[int(line[0])].reorientMirrorAxis(line)
-			else:
-				print("line %d of csv is addressed to a row that does not exist: %d" % (i, int(line[0])))
-		
-		self.run()
-
-
-	def run(self):
-		print ("\n")
-
-		commandsOut = 1
-		updates = 0
-		while (commandsOut > 0):
-
-			for r in self.rowInterfaces:
-				self.rowInterfaces[r].update()
-
-			commandsOut = 0
-			commandsQueue = 0
-			ackCount = 0
-			nackCount = 0
-			
-			for row in self.rowInterfaces:
-				commandsOut += self.rowInterfaces[row].getCurrentCommandsOut()
-				ackCount += self.rowInterfaces[row].getCurrentAckCount()
-				nackCount += self.rowInterfaces[row].getCurrentNackCount()
-				commandsQueue += self.rowInterfaces[row].commandQueue.qsize()
-			updates += 1
-			time.sleep(1)
-
-			sys.stdout.write("\r%d commands out | %d commands in queue | %d acks | %d nacks | %d cycles \r" % (commandsOut, commandsQueue, ackCount, nackCount, updates))
-		
-		for r in self.rowInterfaces:
-			self.rowInterfaces[r].fsm.ackCount = 0
-			self.rowInterfaces[r].fsm.nackCount = 0
-
-		print ("\n")
-
-	
-
-			
-
-
-		
 class CatoptricController():
 	def __init__(self):
 		self.surface = CatoptricSurface()

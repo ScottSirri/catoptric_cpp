@@ -36,28 +36,29 @@ struct Message {
 
 class CatoptricRow {
 
-    int serial_fd;
-    int rowNumber, numMirrors;
-    std::vector<MotorState> motor_states;
-    std::vector<Message> commandQueue;
-    SerialFSM fsm;
+    private:
+        int serial_fd;
+        int rowNumber, numMirrors;
+        std::vector<MotorState> motor_states;
+        std::vector<Message> commandQueue;
+        SerialFSM fsm;
 
-	int _setup(const char *serial_port_in);
-	int resetSerialBuffer();
-	void update();
-	void step_motor(int mirror_id, int which_motor, int direction, 
-            float delta_pos); 
-	void sendMessageToArduino(Message message);
-	int getCurrentCommandsOut(); 
-	int getCurrentNackCount();
-	int getCurrentAckCount();
+        int _setup(const char *serial_port_in);
+        int resetSerialBuffer();
+        void step_motor(int mirror_id, int which_motor, int direction, 
+                float delta_pos); 
+        void sendMessageToArduino(Message message);
+        int getCurrentCommandsOut(); 
+        int getCurrentNackCount();
+        int getCurrentAckCount();
 
     // What is 'command'? What data type is it supposed to be?
-	// TODO : `void reorientMirrorAxis(Message command); 
+	// TODO : void reorientMirrorAxis(Message command); 
 
     public:
         CatoptricRow();
         CatoptricRow(int rowNumber_in, int numMirrors_in, 
                 const char *serial_port_in); 
 	    void reset();
+        void update();
 };

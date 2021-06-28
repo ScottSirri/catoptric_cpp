@@ -66,6 +66,8 @@ class CatoptricSurface {
 
 class CatoptricController {
 
+    CatoptricSurface surface;
+
     CatoptricController();
 
 	void checkForNewCSV();
