@@ -1,7 +1,8 @@
 #include <iostream>
+#include <algorithm>    // transform
 #include <filesystem>
 #include <stdlib.h>
-#include <stdio.h>      // sprintf
+#include <stdio.h>      // snprintf
 #include <sstream>
 #include <fstream>
 #include <thread>         // std::this_thread::sleep_for
@@ -228,8 +229,10 @@ void CatoptricSurface::updateByCSV(string path) {
             return;
         }
 
-        for(int rowInd = 0; rowInd < rowInterfaces.size(); ++rowInd) {
-            if(rowRead == rowInterfaces[rowInd].row) {
+        bool foundRow = false;
+
+        for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
+            if(rowRead == rowInterfaces[rowInd].getRowNumber()) {
                 foundRow = true;
                 rowInterfaces[rowRead].reorientMirrorAxis();
                 break;
@@ -237,8 +240,8 @@ void CatoptricSurface::updateByCSV(string path) {
         }
 
         if(!foundRow) {
-            printf("Line %d of CSV is addressed to a row that does not exist
-                    : %d", csvLineInd, rowRead);
+            printf("Line %d of CSV is addressed to a row that does not exist"
+                    ": %d", csvLineInd, rowRead);
         }
     }
 
@@ -267,8 +270,8 @@ void CatoptricSurface::run() {
         updates++;
         // TODO: Do we really need to sleep here? Why, and is this a good way?
         this_thread::sleep_for (chrono::seconds(1));
-        printf("\r%d commands out | %d commands in queue | %d acks | %d nacks 
-                | %d cycles \r", commandsOut, commandsQueue, ackCount, 
+        printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
+                "| %d cycles \r", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
 
         for(CatoptricRow& cr : rowInterfaces) {
@@ -290,7 +293,8 @@ vector<string> CatoptricController::checkForNewCSV() {
     
     string filePath, ending = ".csv";
     // For each file in directory csv/new
-    for (const auto & entry : filesystem::directory_iterator(directoryStr)) {
+    //                          TODO : Check std::__fs::filesystem ?
+    for (const auto & entry : std::__fs::filesystem::directory_iterator(directoryStr)) {
         filePath = entry.path();
         // Check if each file's name ends in CSV extension
         if(0 == filePath.compare(filePath.length() - ending.length(), 
@@ -331,10 +335,12 @@ void CatoptricController::run() {
         }
 
         string userInput;
-        printf("%s", inputMessage);
+        printf("%s", inputMessage.c_str());
         cin >> userInput;
         printf("\n\n");
-        userInput = userInput.tolower();
+        //userInput = tolower(userInput);
+        transform(userInput.begin(), userInput.end(), 
+                userInput.begin(), ::tolower);
         if(0 == userInput.compare("reset")) {
             surface.reset();
             printf(" -- Reset Complete\n");
@@ -370,9 +376,9 @@ void CatoptricController::run() {
              * Execute system call 'mv %s %s' w str formatting for csv, newName
              */
             string mov_cmd = "mov " + csv + " " + newName;
-            if(system(mov_cmd) != 0) {
+            if(system(mov_cmd.c_str()) != 0) {
                 printf("Error in system function for command \'%s\': %s\n", 
-                        mov_cmd, strerror(errno));
+                        mov_cmd.c_str(), strerror(errno));
                 return;
                 
             }

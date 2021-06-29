@@ -40,20 +40,12 @@ class CatoptricRow {
         int serial_fd;
         int rowNumber, numMirrors;
         std::vector<MotorState> motor_states;
-        std::vector<Message> commandQueue;
-        SerialFSM fsm;
 
         int _setup(const char *serial_port_in);
-        int resetSerialBuffer();
         void step_motor(int mirror_id, int which_motor, int direction, 
                 float delta_pos); 
         void sendMessageToArduino(Message message);
-        int getCurrentCommandsOut(); 
-        int getCurrentNackCount();
-        int getCurrentAckCount();
 
-    // What is 'command'? What data type is it supposed to be?
-	// TODO : void reorientMirrorAxis(Message command); 
 
     public:
         CatoptricRow();
@@ -61,4 +53,14 @@ class CatoptricRow {
                 const char *serial_port_in); 
 	    void reset();
         void update();
+        int resetSerialBuffer();
+        int getRowNumber();
+        int getCurrentCommandsOut(); 
+        int getCurrentNackCount();
+        int getCurrentAckCount();
+    // TODO : What is 'command'? What data type is it supposed to be?
+	    void reorientMirrorAxis(Message command); 
+
+        std::vector<Message> commandQueue;
+        SerialFSM fsm;
 };

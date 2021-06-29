@@ -47,26 +47,28 @@ struct serialComp {
 
 class CatoptricSurface {
 
-    static std::string SERIAL_INFO_PREFIX;
+    private:
+        int numRowsConnected;
+        SerialPortDict serialPortOrder;
+        CatoptricRow rowInterfaces[NUM_ROWS];
+        static std::string SERIAL_INFO_PREFIX;
+        std::vector<SerialPort> serialPorts;
+        std::vector<std::string> csvData;
 
-    SerialPortDict serialPortOrder;
-    std::vector<SerialPort> serialPorts;
-    int numRowsConnected;
-    CatoptricRow rowInterfaces[NUM_ROWS];
-    std::vector<std::string> csvData;
+        /* Initializes a Row Interface for each available arduino */
+        void setupRowInterfaces();
+        /* Returns a list of serial ports corresponding to Arduinos, ordered 
+           according to the serialPortOrder dictionary */
+        std::vector<SerialPort> getOrderedSerialPorts();
+        void getCSV(std::string path);
+        void run();
 
+    public:
+        CatoptricSurface();
 
-    CatoptricSurface();
-	// Initializes a Row Interface for each available arduino
-    void setupRowInterfaces();
-	/* Returns a list of serial ports corresponding to Arduionos, ordered 
-     * according to the serialPortOrder dictionary
-     */
-    std::vector<SerialPort> getOrderedSerialPorts();
-	void reset();
-	void getCSV(std::string path);
-	void updateByCSV(std::string path);
-	void run();
+        void reset();
+        void updateByCSV(std::string path);
+
 };
 
 class CatoptricController {

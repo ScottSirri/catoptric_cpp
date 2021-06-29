@@ -158,3 +158,7 @@ void CatoptricRow::reset() {
 		motor_states[i].tilt = 0;
     }
 }
+
+int CatoptricRow::getRowNumber() {
+    return rowNumber;
+}
