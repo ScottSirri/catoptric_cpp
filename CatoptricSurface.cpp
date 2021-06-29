@@ -1,10 +1,13 @@
 #include <iostream>
 #include <filesystem>
 #include <stdlib.h>
+#include <stdio.h>      // sprintf
 #include <sstream>
 #include <fstream>
 #include <thread>         // std::this_thread::sleep_for
 #include <chrono>         // std::chrono::seconds
+#include <cstring>  // #include <string>
+#include <cerrno>   // #include <errno.h>
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
 
@@ -299,6 +302,21 @@ vector<string> CatoptricController::checkForNewCSV() {
     return newCSVs;
 }
 
+int extractFirstIntFromFile(istream& filStream) {
+    string line;
+    getline(filStream, line);
+
+    stringstream lineStream(line);
+    string wc_elem;
+
+    while(getline(lineStream, wc_elem, ' ')) {
+        if(wc_elem.empty() != true) return stoi(wc_elem);
+    }
+
+    printf("extractFirstIntFromFile error, no int found\n");
+    return ERR_NO_INT;
+}
+
 void CatoptricController::run() {
     while(CONTROLLER_RUNNING) {
         printf("\n-------------------------\n\n");
@@ -308,7 +326,7 @@ void CatoptricController::run() {
 
         if(csvList.size() > 0) {
             csv = csvList[0];
-            printf(" -- Found csv file \'%s\'\n", csv);
+            printf(" -- Found csv file \'%s\'\n", csv.c_str());
             inputMessage = "\'Reset\' mirrors or \'Run\' file: ";
         }
 
@@ -321,14 +339,46 @@ void CatoptricController::run() {
             surface.reset();
             printf(" -- Reset Complete\n");
         } else if(csvList.size() > 0 && 0 == userInput.compare("run")) {
-            printf(" -- Running \'%s\'\n", csv);
+            printf(" -- Running \'%s\'\n", csv.c_str());
             surface.updateByCSV(csv); // TODO : Need to alter csv before?
-            printf(" -- \'%s\' ran successfully\n", csv);
-            int archiveLength = ;// TODO
+            printf(" -- \'%s\' ran successfully\n", csv.c_str());
+
+            char ls_wc_cmd[CMD_LEN];
+            snprintf(ls_wc_cmd, CMD_LEN, "ls -l ./csv/archive | wc > %s", 
+                    LS_WC_FILENAME);
+            if(0 != system(ls_wc_cmd)) {
+                printf("Error in system function for command \'%s\': %s\n", 
+                        ls_wc_cmd, strerror(errno));
+                return;
+            }
+
+            int archiveLength;
+            ifstream fs;
+            fs.open(LS_WC_FILENAME, ios_base::in);
+            if(fs.good() && !fs.eof()) {
+                // 'ls -l' output has one extra line for number of blocks,
+                // so subtract one for number of files in directory
+                archiveLength = extractFirstIntFromFile(fs) - 1;
+            }
+
+            // Account for -1 offset to check for error code
+            if(archiveLength + 1 == ERR_NO_INT) return;
+
+            string newName = "./csv/archive/" + to_string(archiveLength) + 
+                "_" + csv;
+            /* os.rename(csv, newName)
+             * Execute system call 'mv %s %s' w str formatting for csv, newName
+             */
+            string mov_cmd = "mov " + csv + " " + newName;
+            if(system(mov_cmd) != 0) {
+                printf("Error in system function for command \'%s\': %s\n", 
+                        mov_cmd, strerror(errno));
+                return;
+                
+            }
+            printf(" -- \'%s\' moved to archive\n", csv.c_str());
             
         }
-
-
     }
 }
 

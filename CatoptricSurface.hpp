@@ -8,10 +8,14 @@
 #define UNDEF_ORDER -4
 
 #define ERR_QUERY_FAILED -3
+#define ERR_NO_INT -7
 #define NO_DEVICES 512
 #define SERIAL_NUM_LEN 20
 #define NUM_ROWS 32
 #define CONTROLLER_RUNNING 1
+#define CMD_LEN 100
+
+#define LS_WC_FILENAME ".numFiles"
 
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)
