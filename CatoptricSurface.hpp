@@ -14,8 +14,12 @@
 #define NUM_ROWS 32
 #define CONTROLLER_RUNNING 1
 #define CMD_LEN 100
+#define SYSTEM_SUCCESS 0
+#define CMP_EQUAL 0
 
+#define LS_ID_FILENAME ".serialInfo"
 #define LS_WC_FILENAME ".numFiles"
+#define LS_CSV_FILENAME ".csvSearch"
 
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)

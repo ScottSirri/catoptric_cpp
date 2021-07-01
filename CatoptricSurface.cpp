@@ -98,8 +98,8 @@ CatoptricSurface::CatoptricSurface() {
 
 vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     string path = "/dev/serial/by-id";
-    string cmd = "ls " + path + " > .serialInfo";
-    int ret = system(cmd.c_str());
+    string ls_id_cmd = "ls " + path + " > " + LS_ID_FILENAME;
+    int ret = system(ls_id_cmd.c_str());
     if(ret == NO_DEVICES) {
         printf("No devices detected in /dev/serial/by-id\n");
         return vector<SerialPort>();
@@ -108,7 +108,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     vector<SerialPort> serialPorts;
 
     fstream serialInfoFile;
-    serialInfoFile.open(".serialInfo", ios::in);
+    serialInfoFile.open(LS_ID_FILENAME, ios::in);
     if(serialInfoFile.is_open()) {
         string serialInfoLine;
         while(getline(serialInfoFile, serialInfoLine)) {
@@ -290,16 +290,24 @@ CatoptricController::CatoptricController() {
 vector<string> CatoptricController::checkForNewCSV() {
     string directoryStr = "csv/new";
     vector<string> newCSVs;
-    
-    string filePath, ending = ".csv";
-    // For each file in directory csv/new
-    //                          TODO : Check std::__fs::filesystem ?
-    for (const auto & entry : std::__fs::filesystem::directory_iterator(directoryStr)) {
-        filePath = entry.path();
-        // Check if each file's name ends in CSV extension
-        if(0 == filePath.compare(filePath.length() - ending.length(), 
-                    ending.length(), ending)) {
-            newCSVs.push_back(filePath);
+
+    string csv_ending = ".csv";
+    string ls_cmd = "ls " + directoryStr + " > " + LS_CSV_FILENAME;
+    int ret;
+    // For each file in directory LS_CSV_FILENAME (csv/new)
+    if((ret = system(ls_cmd.c_str())) != SYSTEM_SUCCESS) {
+        printf("System function error: return  %d, %s\n", ret, strerror(errno));
+    }
+
+    ifstream ls_file_stream;
+    ls_file_stream.open(LS_CSV_FILENAME, ios_base::in);
+    string ls_line;
+    while(ls_file_stream.good() && !ls_file_stream.eof() && 
+            getline(ls_file_stream, ls_line)) {
+        // If line from ls ends in ".csv"
+        if(ls_line.compare(ls_line.length() - csv_ending.length(), 
+                    csv_ending.length(), csv_ending) == CMP_EQUAL) {
+            newCSVs.push_back(ls_line);
         }
     }
 
@@ -350,9 +358,9 @@ void CatoptricController::run() {
             printf(" -- \'%s\' ran successfully\n", csv.c_str());
 
             char ls_wc_cmd[CMD_LEN];
-            snprintf(ls_wc_cmd, CMD_LEN, "ls -l ./csv/archive | wc > %s", 
+            snprintf(ls_wc_cmd, CMD_LEN, "ls ./csv/archive | wc > %s", 
                     LS_WC_FILENAME);
-            if(0 != system(ls_wc_cmd)) {
+            if(system(ls_wc_cmd) != SYSTEM_SUCCESS) {
                 printf("Error in system function for command \'%s\': %s\n", 
                         ls_wc_cmd, strerror(errno));
                 return;
@@ -362,9 +370,9 @@ void CatoptricController::run() {
             ifstream fs;
             fs.open(LS_WC_FILENAME, ios_base::in);
             if(fs.good() && !fs.eof()) {
-                // 'ls -l' output has one extra line for number of blocks,
-                // so subtract one for number of files in directory
-                archiveLength = extractFirstIntFromFile(fs) - 1;
+                /* First int in output from 'wc' is number lines, i.e. number
+                   files listed by ls */
+                archiveLength = extractFirstIntFromFile(fs);
             }
 
             // Account for -1 offset to check for error code
@@ -376,7 +384,7 @@ void CatoptricController::run() {
              * Execute system call 'mv %s %s' w str formatting for csv, newName
              */
             string mov_cmd = "mov " + csv + " " + newName;
-            if(system(mov_cmd.c_str()) != 0) {
+            if(system(mov_cmd.c_str()) != SYSTEM_SUCCESS) {
                 printf("Error in system function for command \'%s\': %s\n", 
                         mov_cmd.c_str(), strerror(errno));
                 return;
