@@ -9,6 +9,7 @@
 
 #define ERR_QUERY_FAILED -3
 #define ERR_NO_INT -7
+#define ERR_STOI -9
 #define NO_DEVICES 512
 #define SERIAL_NUM_LEN 20
 #define NUM_ROWS 32

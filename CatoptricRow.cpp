@@ -9,18 +9,28 @@
 
 using namespace std;
 
-MotorState::MotorState(): pan(0), tilt(0) {}
-MotorState::MotorState(int pan_in, int tilt_in): pan(pan_in), tilt(tilt_in) {}
+MotorState::MotorState() {
+    motor[PAN_IND] = 0;
+    motor[TILT_IND] = 0;
+}
+MotorState::MotorState(int pan_in, int tilt_in) {
+    motor[PAN_IND] = pan_in;
+    motor[TILT_IND] = tilt_in;
+}
 
-Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, int chigh_in, 
-        int clow_in): magic_num(MSG_MAGIC_NUM), ack_key(ACK_KEY) {
+Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
+        int chigh_in, int clow_in): magic_num(MSG_MAGIC_NUM), ack_key(ACK_KEY) {
     row_num = row_in;
     mirror_id = mirror_in;
+    which_motor = motor_in;
     direction = dir_in;
     count_high = chigh_in;
     count_low = clow_in;
 }
 
+/* Convert the message into a byte stream that can be serialized and sent to
+ * the Arduino.
+ */
 vector<char> Message::to_vec() {
     vector<char> vec;
     string str;
@@ -28,8 +38,8 @@ vector<char> Message::to_vec() {
 
     try {
         str = to_string(magic_num) + to_string(ack_key) + to_string(row_num) + 
-            to_string(mirror_id) + to_string(which_motor) + to_string(direction) + 
-            to_string(count_high) + to_string(count_low);
+            to_string(mirror_id) + to_string(which_motor) + 
+            to_string(direction) + to_string(count_high) + to_string(count_low);
     } catch (...) {
         printf("to_string error: %s\n", strerror(errno));
         return vec;
@@ -105,7 +115,8 @@ void CatoptricRow::step_motor(int mirror_id, int which_motor, int direction, flo
 	int countLow = ((int) delta_pos_int) & 255;
 	int countHigh = (((int) delta_pos_int) >> 8) & 255;
     
-	Message message (rowNumber, mirror_id, which_motor, direction, countHigh, countLow);
+	Message message (rowNumber, mirror_id, which_motor, direction, 
+            countHigh, countLow);
 	commandQueue.push_back(message);
 }
 
@@ -136,26 +147,34 @@ int CatoptricRow::getCurrentAckCount() {
 	return fsm.ackCount;
 }
 
-// What is 'command'? What data type is it supposed to be?
-/*void CatoptricRow::reorientMirrorAxis(Message command) {
-	int mirror = (int) command[1];
-	int motor = (int) command[2];
-	int newState = (int) command[3];
-	int currentState = motor_states[mirror-1][motor];
-	
-	int delta = newState - currentState;
-	int direction = delta < 0 ? 1 : 0;
+void CatoptricRow::reorientMirrorAxis(Message command) {
+    int mirror = command.mirror_id;
+    int motor = command.which_motor;
+    int newState = command.new_pos;
+    int currentState = -1;
+    if(motor == PAN_IND) {
+        currentState = motor_states[mirror - 1].motor[PAN_IND];
+    } else if(motor == TILT_IND) {
+        currentState = motor_states[mirror - 1].motor[TILT_IND];
+    } else {
+        printf("Invalid 'motor' value in reorientMirrorAxis\n");
+        return;
+    }
 
-	step_motor(mirror, motor, direction, abs(delta));
-	motor_states[mirror-1][motor] = newState;
-}*/
+    int delta = newState - currentState;
+    int direction = delta <  0 ? 1 : 0;
+    if(delta < 0) delta *= -1;
+
+    step_motor(mirror, motor, direction, delta);
+    motor_states[mirror - 1].motor[motor] = newState;
+}
 
 void CatoptricRow::reset() {
 	for(int i = 0; i < numMirrors; ++i) {
 		step_motor(i+1, 1, 0, 200);
 		step_motor(i+1, 0, 0, 200);
-		motor_states[i].pan = 0;
-		motor_states[i].tilt = 0;
+		motor_states[i].motor[PAN_IND] = 0;
+		motor_states[i].motor[TILT_IND] = 0;
     }
 }
 

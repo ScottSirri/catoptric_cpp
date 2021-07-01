@@ -15,8 +15,11 @@
 #define ERR_TCFLUSH -2
 #define ERR_WRITE -3
 
+#define PAN_IND 0
+#define TILT_IND 1
+
 struct MotorState {
-    int pan, tilt;
+    int motor[2];
 
     MotorState();
     MotorState(int pan_in, int tilt_in);
@@ -25,11 +28,13 @@ struct MotorState {
 struct Message {
     const int magic_num, ack_key;
     int row_num;
-    int mirror_id, which_motor, direction;
+    int mirror_id, which_motor, direction, new_pos;
     int count_high, count_low;
 
     Message(int row_in, int mirror_in, int motor_in, int dir_in, 
             int chigh_in, int clow_in);
+    // TODO : need to define this constructor
+    Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
 
     std::vector<char> to_vec(); 
 };
@@ -58,7 +63,6 @@ class CatoptricRow {
         int getCurrentCommandsOut(); 
         int getCurrentNackCount();
         int getCurrentAckCount();
-    // TODO : What is 'command'? What data type is it supposed to be?
 	    void reorientMirrorAxis(Message command); 
 
         std::vector<Message> commandQueue;

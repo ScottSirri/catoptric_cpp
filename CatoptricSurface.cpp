@@ -230,11 +230,14 @@ void CatoptricSurface::updateByCSV(string path) {
         }
 
         bool foundRow = false;
+        // Synthesize Message from CSV line
+        Message msg(rowRead, csvData[csvLineInd + 1], csvData[csvLineInd + 2], 
+                csvData[csvLineInd + 3]);
 
         for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
             if(rowRead == rowInterfaces[rowInd].getRowNumber()) {
                 foundRow = true;
-                rowInterfaces[rowRead].reorientMirrorAxis();
+                rowInterfaces[rowRead].reorientMirrorAxis(msg);
                 break;
             }
         }
@@ -322,7 +325,18 @@ int extractFirstIntFromFile(istream& filStream) {
     string wc_elem;
 
     while(getline(lineStream, wc_elem, ' ')) {
-        if(wc_elem.empty() != true) return stoi(wc_elem);
+        if(wc_elem.empty() != true) {
+            int stoi_ret;
+            try {
+                stoi_ret = stoi(wc_elem);
+            } catch(...) {
+                printf("extractFirstIntFromFile parsing error in stoi: %s\n", 
+                        strerror(errno));
+                stoi_ret = ERR_STOI;
+            }
+
+            return stoi_ret;
+        }
     }
 
     printf("extractFirstIntFromFile error, no int found\n");
@@ -375,8 +389,8 @@ void CatoptricController::run() {
                 archiveLength = extractFirstIntFromFile(fs);
             }
 
-            // Account for -1 offset to check for error code
-            if(archiveLength + 1 == ERR_NO_INT) return;
+            if(archiveLength == ERR_NO_INT ||
+                    archiveLength == ERR_STOI) return;
 
             string newName = "./csv/archive/" + to_string(archiveLength) + 
                 "_" + csv;
