@@ -19,7 +19,7 @@ MotorState::MotorState(int pan_in, int tilt_in) {
 }
 
 Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
-        int chigh_in, int clow_in): magic_num(MSG_MAGIC_NUM), ack_key(ACK_KEY) {
+        int chigh_in, int clow_in) {
     row_num = row_in;
     mirror_id = mirror_in;
     which_motor = motor_in;
@@ -27,6 +27,16 @@ Message::Message(int row_in, int mirror_in, int motor_in, int dir_in,
     count_high = chigh_in;
     count_low = clow_in;
 }
+
+Message::Message(int mirrorRow, int mirrorColumn, int motorNumber, 
+        int position) {
+    row_num = mirrorRow;
+    mirror_id = mirrorColumn;
+    which_motor = motorNumber;
+    new_pos = position;
+}
+
+Message::Message() {}
 
 /* Convert the message into a byte stream that can be serialized and sent to
  * the Arduino.
@@ -37,8 +47,8 @@ vector<char> Message::to_vec() {
     int i;
 
     try {
-        str = to_string(magic_num) + to_string(ack_key) + to_string(row_num) + 
-            to_string(mirror_id) + to_string(which_motor) + 
+        str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
+            to_string(row_num) + to_string(mirror_id) + to_string(which_motor) +
             to_string(direction) + to_string(count_high) + to_string(count_low);
     } catch (...) {
         printf("to_string error: %s\n", strerror(errno));

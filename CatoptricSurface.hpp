@@ -21,6 +21,7 @@
 #define LS_ID_FILENAME ".serialInfo"
 #define LS_WC_FILENAME ".numFiles"
 #define LS_CSV_FILENAME ".csvSearch"
+#define SERIAL_INFO_PREFIX_MACRO "usb-Arduino__www.arduino.cc__0043_"
 
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)
@@ -56,9 +57,9 @@ class CatoptricSurface {
         int numRowsConnected;
         SerialPortDict serialPortOrder;
         CatoptricRow rowInterfaces[NUM_ROWS];
-        static std::string SERIAL_INFO_PREFIX;
         std::vector<SerialPort> serialPorts;
         std::vector<std::string> csvData;
+        std::string SERIAL_INFO_PREFIX; 
 
         /* Initializes a Row Interface for each available arduino */
         void setupRowInterfaces();

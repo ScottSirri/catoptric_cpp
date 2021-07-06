@@ -68,7 +68,7 @@ void SerialPortDict::addPort(SerialPort port) {
 
 CatoptricSurface::CatoptricSurface() {
 
-    SERIAL_INFO_PREFIX = "usb-Arduino__www.arduino.cc__0043_";
+    SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
     //rowInterfaces = CatoptricRow[NUM_ROWS];
 
     serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
@@ -220,20 +220,24 @@ void CatoptricSurface::updateByCSV(string path) {
         cr.resetSerialBuffer();
     }
 
-    int rowRead = -1;
+    int rowRead;
     for(int csvLineInd = 0; csvLineInd < csvData.size(); csvLineInd += 4) {
+        // Synthesize Message from CSV line
+        int mirrorColumn, motorNumber, position;
         try {
-            rowRead = stoi(csvData[csvLineInd]);
-        } catch(...) {
-            printf("updateByCSV parsing error in stoi\n");
+            rowRead      = stoi(csvData[csvLineInd]);
+            mirrorColumn = stoi(csvData[csvLineInd + 1]);
+            motorNumber  = stoi(csvData[csvLineInd + 2]);
+            position     = stoi(csvData[csvLineInd + 3]);
+        } catch(const std::invalid_argument& e) {
+            printf("Invalid CSV data passed to stoi in updateByCSV: %s\n", 
+                    e.what());
             return;
         }
 
-        bool foundRow = false;
-        // Synthesize Message from CSV line
-        Message msg(rowRead, csvData[csvLineInd + 1], csvData[csvLineInd + 2], 
-                csvData[csvLineInd + 3]);
+        Message msg(rowRead, mirrorColumn, motorNumber, position);
 
+        bool foundRow = false;
         for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
             if(rowRead == rowInterfaces[rowInd].getRowNumber()) {
                 foundRow = true;
@@ -380,10 +384,13 @@ void CatoptricController::run() {
                 return;
             }
 
-            int archiveLength;
+            int archiveLength = -1;
             ifstream fs;
             fs.open(LS_WC_FILENAME, ios_base::in);
-            if(fs.good() && !fs.eof()) {
+            if(fs.fail()) {
+                printf("LS_WC file fail to open: %s\n", strerror(errno));
+                return;
+            } else if(fs.good() && !fs.eof()) {
                 /* First int in output from 'wc' is number lines, i.e. number
                    files listed by ls */
                 archiveLength = extractFirstIntFromFile(fs);

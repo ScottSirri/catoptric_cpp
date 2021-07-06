@@ -26,15 +26,14 @@ struct MotorState {
 };
 
 struct Message {
-    const int magic_num, ack_key;
     int row_num;
     int mirror_id, which_motor, direction, new_pos;
     int count_high, count_low;
 
     Message(int row_in, int mirror_in, int motor_in, int dir_in, 
             int chigh_in, int clow_in);
-    // TODO : need to define this constructor
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
+    Message();
 
     std::vector<char> to_vec(); 
 };
