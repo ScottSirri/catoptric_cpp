@@ -11,7 +11,7 @@
 #define ERR_NO_INT -7
 #define ERR_STOI -9
 #define NO_DEVICES 512
-#define SERIAL_NUM_LEN 20
+#define SERIAL_NUM_LEN 20  /* Number characters in Arduino serial number */
 #define NUM_ROWS 32
 #define CONTROLLER_RUNNING 1
 #define CMD_LEN 100
@@ -54,20 +54,24 @@ struct serialComp {
 class CatoptricSurface {
 
     private:
+        // Number of rows in surface
         int numRowsConnected;
-        SerialPortDict serialPortOrder;
+        // Hard-coded dictionary of the setup's Arduinos and each serial number
+        SerialPortDict serialPortOrder; 
+        // Vector of objects, each representing one row in surface
         CatoptricRow rowInterfaces[NUM_ROWS];
+        // Vector of objects each representing a serial port open to an Arduino
         std::vector<SerialPort> serialPorts;
+        // Vector of cells read in from the latest CSV
         std::vector<std::string> csvData;
+        // Prefix for VFS entry of a serial port connected to an Arduino
         std::string SERIAL_INFO_PREFIX; 
 
-        /* Initializes a Row Interface for each available arduino */
-        void setupRowInterfaces();
-        /* Returns a list of serial ports corresponding to Arduinos, ordered 
-           according to the serialPortOrder dictionary */
         std::vector<SerialPort> getOrderedSerialPorts();
-        void getCSV(std::string path);
+        std::vector<SerialPort> readSerialPorts();
+        void setupRowInterfaces();
         void run();
+        void getCSV(std::string path);
 
     public:
         CatoptricSurface();

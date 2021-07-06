@@ -96,14 +96,37 @@ CatoptricSurface::CatoptricSurface() {
     reset();
 }
 
+/* Returns a vector of SerialPort objects each representing a connected Arduino,
+ * sorted by serial number. 
+ */
 vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
+
     string path = "/dev/serial/by-id";
     string ls_id_cmd = "ls " + path + " > " + LS_ID_FILENAME;
+
     int ret = system(ls_id_cmd.c_str());
     if(ret == NO_DEVICES) {
         printf("No devices detected in /dev/serial/by-id\n");
         return vector<SerialPort>();
     }
+
+    // Read VFS entries for serial ports from 'ls' output
+    vector<SerialPort> serialPorts = readSerialPorts();
+
+    // Sort serial ports by their serial number
+    sort(serialPorts.begin(), serialPorts.end(), serialCompObj);
+
+    for(SerialPort sp : serialPorts) {
+        printf("Arduino #%s : Row #%d\n", sp.serialNumber.c_str(), sp.row);
+    }
+
+    return serialPorts;
+}
+
+/* Read the file containing 'ls' output to scan VFS entries.
+ * Return vector of SerialPort objects representing only connected Arduinos.
+ */
+vector<SerialPort> CatoptricSurface::readSerialPorts() {
 
     vector<SerialPort> serialPorts;
 
@@ -116,7 +139,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
             
             /* Format of Arduino Uno's file name in /dev/serial/by-id is
              *     usb-Arduino__www.arduino.cc__0043_XXXXXXXXXXXXXXXXXXX-YYYY
-             * for serial number X's
+             * for serial number X's (SERIAL_INFO_PREFIX contains the prefix)
              */
 
             if(serialInfoLine.find(SERIAL_INFO_PREFIX) != string::npos) {
@@ -137,21 +160,18 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     }
     serialInfoFile.close();
 
-    // Sort serial ports by their serial number
-    sort(serialPorts.begin(), serialPorts.end(), serialCompObj);
-
-    for(SerialPort sp : serialPorts) {
-        printf("Arduino #%s : Row #%d\n", sp.serialNumber.c_str(), sp.row);
-    }
-
     return serialPorts;
 }
 
+/* Initializes a CatoptricRow object for each available Arduino.
+ * Initializes rowInterfaces accordingly.
+ */
 void CatoptricSurface::setupRowInterfaces() {
     for(SerialPort sp : serialPorts) {
         int row = sp.row;
         string port = sp.device;
 
+        // Hard-coded dimensions of our catoptric surface
         int rowLength = 0;
         if(row >= 1 && row < 12) {
             rowLength = 16;
@@ -171,32 +191,22 @@ void CatoptricSurface::setupRowInterfaces() {
     }
 }
 
+/* Reset the orientation of every mirror and resume running.
+ */
 void CatoptricSurface::reset() {
     printf(" -- Resetting all mirrors to default position\n");
     for(CatoptricRow cr : rowInterfaces) {
-        cr.reset(); // Reset each row
+        cr.reset(); // Reset whole row
     }
 
     run();
 }
 
-vector<string> getNextLineAndSplitIntoTokens(istream& str) {
-    vector<string> result;
-    string line;
-    getline(str,line);
-
-    stringstream lineStream(line);
-    string cell;
-
-    while(getline(lineStream, cell, ',')) {
-        result.push_back(cell);
-    }
-
-    return result;
-}
-
+/* Clear the old cached CSV data.
+ * Read the new passed CSV file and insert cells into csvData (omit delimiters).
+ */
 void CatoptricSurface::getCSV(string path) {
-    csvData.clear(); // Delete old CSV data
+    csvData.clear(); // Clear old, cached CSV data
 
     bool readData = false;
 
@@ -205,12 +215,36 @@ void CatoptricSurface::getCSV(string path) {
     while(fs.good() && !fs.eof()) {
         readData = true;
         // Get vector of next line's elements
-        vector<string> nextLine = getNextLineAndSplitIntoTokens(fs);
-        // Append the elements of the next line onto csvData
-        csvData.insert(csvData.end(), nextLine.begin(), nextLine.end());
+        vector<string> nextLinesCells = getNextLineAndSplitIntoTokens(fs);
+        // Append the next line's cells onto csvData
+        csvData.insert(csvData.end(), nextLinesCells.begin(), 
+                nextLinesCells.end());
    }
 
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
+}
+
+/* Returns a vector of all cells in the next unread line from the CSV
+ * corresponding to the passed i(f)stream.
+ */
+vector<string> getNextLineAndSplitIntoTokens(istream& str) {
+    
+    vector<string> result;
+    string line, cell;
+    
+    getline(str,line);
+    stringstream lineStream(line);
+
+    while(getline(lineStream, cell, ',')) {
+        result.push_back(cell);
+    }
+
+    if(result.size() == 0) {
+        printf("Failed to read data from CSV line in "
+                "getNextLineAndSplitIntoTokens\n");
+    }
+
+    return result;
 }
 
 void CatoptricSurface::updateByCSV(string path) {
@@ -417,47 +451,3 @@ void CatoptricController::run() {
     }
 }
 
-/*
-class CatoptricController():
-
-	def run(self):
-		while True:
-			print ("\n-------------------------\n")
-			csv = ""
-			csvList = self.checkForNewCSV()
-			inputMessage = bcolors.OKBLUE + "'Reset' mirrors or upload a file to run: " + bcolors.ENDC
-			
-			if (len(csvList) > 0):
-				csv = csvList[0] #This could be more intelligent
-				print (" -- Found csv file '%s'\n" % os.path.basename(csv))
-				inputMessage = bcolors.OKBLUE + "'Reset' mirrors or 'Run' file: " + bcolors.ENDC
-
-			c = input(inputMessage)
-			print ("\n")
-
-			if (c.lower() == 'reset'):
-				self.surface.reset()
-				print (" -- Reset Complete")
-
-			elif (len(csvList) > 0 and c.lower() == 'run'):
-				fileName = os.path.basename(csv)
-				print (" -- Running '%s'" % fileName)
-
-				self.surface.updateByCSV(csv)
-				print (" -- '%s' ran successfully" % fileName)
-
-				archiveLength = len([name for name in os.listdir('./csv/archive')])
-				newName = './csv/archive/' + str(archiveLength) + "_" + fileName
-				os.rename(csv, newName)
-				print (" -- '%s' moved to archive" % fileName)
-
-
-				
-
-
-
-
-if __name__ == '__main__':
-	c = CatoptricController()
-	c.run()
-*/

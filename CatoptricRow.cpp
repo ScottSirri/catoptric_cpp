@@ -120,7 +120,8 @@ void CatoptricRow::update() {
 }
 
 // Is the last param displacement or final position?
-void CatoptricRow::step_motor(int mirror_id, int which_motor, int direction, float delta_pos) {
+void CatoptricRow::step_motor(int mirror_id, int which_motor, 
+        int direction, float delta_pos) {
 	int delta_pos_int = ((int) delta_pos) * (513.0/360.0);
 	int countLow = ((int) delta_pos_int) & 255;
 	int countHigh = (((int) delta_pos_int) >> 8) & 255;
