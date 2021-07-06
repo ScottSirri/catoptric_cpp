@@ -101,7 +101,12 @@ int CatoptricRow::resetSerialBuffer() {
     return RET_SUCCESS;
 }
 
+/* Read all input from the corresponding serial port and update the CatoptricRow
+ * object's SerialFSM fsm object.
+ * Send a Message object from the back of the commandQueue to the Arduino.
+ */
 void CatoptricRow::update() {
+    
     char input;
     while(read(serial_fd, &input, 1) > 0) {
         fsm.Execute(input);
@@ -111,8 +116,8 @@ void CatoptricRow::update() {
         }
     }
 
-	if (getCurrentCommandsOut() < MAX_CMDS_OUT && 
-            commandQueue.size() > 0) { // If num pending commands is > 0 and < max limit
+    // If the number of pending commands is < max limit and is > 0
+	if (getCurrentCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
 		sendMessageToArduino(message);

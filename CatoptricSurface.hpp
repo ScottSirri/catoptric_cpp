@@ -17,6 +17,7 @@
 #define CMD_LEN 100
 #define SYSTEM_SUCCESS 0
 #define CMP_EQUAL 0
+#define SLEEP_TIME 1    /* Seconds to sleep per CatoptricSurface::run() cycle */
 
 #define LS_ID_FILENAME ".serialInfo"
 #define LS_WC_FILENAME ".numFiles"
@@ -72,6 +73,10 @@ class CatoptricSurface {
         void setupRowInterfaces();
         void run();
         void getCSV(std::string path);
+        std::vector<std::string> getNextLineAndSplitIntoTokens(
+                std::istream& str);
+        void parseCSVLine(int csvLineInd, int& rowRead, 
+                int& mirrorColumn, int& motorNumber, int& position); 
 
     public:
         CatoptricSurface();
@@ -80,15 +85,3 @@ class CatoptricSurface {
         void updateByCSV(std::string path);
 
 };
-
-class CatoptricController {
-
-    CatoptricSurface surface;
-
-    CatoptricController();
-
-    std::vector<std::string> checkForNewCSV();
-	void run();
-};
-
-int main();

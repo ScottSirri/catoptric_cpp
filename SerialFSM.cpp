@@ -7,24 +7,20 @@
 
 SerialFSM::SerialFSM(const char *name_in) {
     name = name_in;
-    //super(SerialFSM, self).__init__()
     currentCommandsToArduino = 0;
     nackCount = 0;
     ackCount = 0;
 
     currentState = 0;
-    //self.setupStates()
     resetVariables();
 }
 
 SerialFSM::SerialFSM() {
-    //super(SerialFSM, self).__init__()
     currentCommandsToArduino = 0;
     nackCount = 0;
     ackCount = 0;
 
     currentState = 0;
-    //self.setupStates()
     resetVariables();
 }
 
@@ -159,7 +155,6 @@ char SerialFSM::getAckY(char c) {
 char SerialFSM::getAckM(char c) {
     if (c <= 2) {
         ackM = c;
-        // print("Mirror (%d, %d), Motor %d moved to new state" % (self.ackX, self.ackY, self.ackM));
         return GET_MAGIC_NUM;
     } else {
         return GET_MAGIC_NUM;
