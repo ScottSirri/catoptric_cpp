@@ -13,9 +13,10 @@ MotorState::MotorState() {
     motor[PAN_IND] = 0;
     motor[TILT_IND] = 0;
 }
-MotorState::MotorState(int pan_in, int tilt_in) {
-    motor[PAN_IND] = pan_in;
-    motor[TILT_IND] = tilt_in;
+
+MotorState::MotorState(int panIn, int tiltIn) {
+    motor[PAN_IND] = panIn;
+    motor[TILT_IND] = tiltIn;
 }
 
 Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
@@ -36,15 +37,12 @@ Message::Message(int mirrorRow, int mirrorColumn, int motorNumber,
     new_pos = position;
 }
 
-Message::Message() {}
-
-/* Convert the message into a byte stream that can be serialized and sent to
+/* Convert the message into a serialized byte vector that can be sent to
  * the Arduino.
  */
 vector<char> Message::to_vec() {
-    vector<char> vec;
+
     string str;
-    int i;
 
     try {
         str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
@@ -52,46 +50,51 @@ vector<char> Message::to_vec() {
             to_string(direction) + to_string(count_high) + to_string(count_low);
     } catch (...) {
         printf("to_string error: %s\n", strerror(errno));
-        return vec;
+        return vector<char>();
     }
 
-    for(i = 0; i < str.length(); ++i) vec.push_back(str[i]);
+    vector<char> msgVec(str.begin(), str.end());
 
-    return vec;
+    return msgVec;
 }
 
 CatoptricRow::CatoptricRow() {}
 
-CatoptricRow::CatoptricRow(int rowNumber_in, int numMirrors_in, 
-        const char *serial_port_in) {
-	rowNumber = rowNumber_in;
-	numMirrors = numMirrors_in;
+CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn, 
+        const char *serialPortIn) {
+
+	rowNumber = rowNumberIn;
+	numMirrors = numMirrorsIn;
 
 	// Init Motor States
 	for(int i = 0; i < numMirrors; ++i) {
         MotorState state = MotorState();
-	    motor_states.push_back(state);
+	    motorStates.push_back(state);
     }
 
 	// Setup Serial
-	_setup(serial_port_in);
+	setup(serialPortIn);
 
     string row_str = to_string(rowNumber);
     const char *row_cstr = row_str.c_str();
 	fsm = SerialFSM(row_cstr);
 }
 
-int CatoptricRow::_setup(const char *serial_port_in) {
-    serial_fd = prep_serial(serial_port_in); // Returns open fd for serial port
+/* Prepare the correpsonding serial port for IO (termios).
+ */
+int CatoptricRow::setup(const char *serialPortIn) {
+    serial_fd = prep_serial(serialPortIn); // Returns open fd for serial port
     if(tcflush(serial_fd, TCIOFLUSH) < 0) {
         printf("tcflush error: %s\n", strerror(errno));
         return ERR_TCFLUSH;
     }
-    sleep(2); // Why does this function sleep?
+    sleep(SETUP_SLEEP_TIME); // Why does this sleep?
 
     return RET_SUCCESS;
 }
 
+/* Flush the serial port buffer.
+ */
 int CatoptricRow::resetSerialBuffer() {
     if(tcflush(serial_fd, TCIOFLUSH) < 0) {
         printf("tcflush error: %s\n", strerror(errno));
@@ -102,7 +105,7 @@ int CatoptricRow::resetSerialBuffer() {
 }
 
 /* Read all input from the corresponding serial port and update the CatoptricRow
- * object's SerialFSM fsm object.
+ * object's SerialFSM object.
  * Send a Message object from the back of the commandQueue to the Arduino.
  */
 void CatoptricRow::update() {
@@ -117,14 +120,15 @@ void CatoptricRow::update() {
     }
 
     // If the number of pending commands is < max limit and is > 0
-	if (getCurrentCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
+	if(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
 		sendMessageToArduino(message);
     }
 }
 
-// Is the last param displacement or final position?
+/* Push a Message onto the commandQueue to update a mirror's position.
+ */
 void CatoptricRow::step_motor(int mirror_id, int which_motor, 
         int direction, float delta_pos) {
 	int delta_pos_int = ((int) delta_pos) * (513.0/360.0);
@@ -136,13 +140,16 @@ void CatoptricRow::step_motor(int mirror_id, int which_motor,
 	commandQueue.push_back(message);
 }
 
+/* Transmit the passed Message to the Arduino.
+ */
 void CatoptricRow::sendMessageToArduino(Message message) {
+
     vector<char> message_vec = message.to_vec();
-    char b_current;
+    char bCurrent;
 
 	for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
-		b_current = message_vec[i];
-        if(write(serial_fd, &b_current, 1) < 0) {
+		bCurrent = message_vec[i];
+        if(write(serial_fd, &bCurrent, 1) < 0) {
             printf("write error: %s\n", strerror(errno));
             return;
         }
@@ -151,27 +158,18 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 	fsm.currentCommandsToArduino += 1;
 }
 
-int CatoptricRow::getCurrentCommandsOut() {
-	return fsm.currentCommandsToArduino;
-}
-
-int CatoptricRow::getCurrentNackCount() {
-	return fsm.nackCount;
-}
-
-int CatoptricRow::getCurrentAckCount() {
-	return fsm.ackCount;
-}
-
+/* Push a Message onto the commandQueue and update motorStates. 
+ * TODO : There may be redundancy between step_motor() and reorientMirrorAxis()?
+ */
 void CatoptricRow::reorientMirrorAxis(Message command) {
     int mirror = command.mirror_id;
     int motor = command.which_motor;
     int newState = command.new_pos;
     int currentState = -1;
     if(motor == PAN_IND) {
-        currentState = motor_states[mirror - 1].motor[PAN_IND];
+        currentState = motorStates[mirror - 1].motor[PAN_IND];
     } else if(motor == TILT_IND) {
-        currentState = motor_states[mirror - 1].motor[TILT_IND];
+        currentState = motorStates[mirror - 1].motor[TILT_IND];
     } else {
         printf("Invalid 'motor' value in reorientMirrorAxis\n");
         return;
@@ -182,18 +180,37 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
     if(delta < 0) delta *= -1;
 
     step_motor(mirror, motor, direction, delta);
-    motor_states[mirror - 1].motor[motor] = newState;
+    motorStates[mirror - 1].motor[motor] = newState;
 }
 
+/* Reset/'zero' the orientation of all mirrors in this row.
+ */
 void CatoptricRow::reset() {
 	for(int i = 0; i < numMirrors; ++i) {
 		step_motor(i+1, 1, 0, 200);
 		step_motor(i+1, 0, 0, 200);
-		motor_states[i].motor[PAN_IND] = 0;
-		motor_states[i].motor[TILT_IND] = 0;
+		motorStates[i].motor[PAN_IND] = 0;
+		motorStates[i].motor[TILT_IND] = 0;
     }
 }
 
+/* Get the SerialFSM's currentCommandsToArduino */
+int CatoptricRow::fsmCommandsOut() {
+	return fsm.currentCommandsToArduino;
+}
+
+/* Get the SerialFSM's nackCount */
+int CatoptricRow::fsmNackCount() {
+	return fsm.nackCount;
+}
+
+/* Get the SerialFSM's ackCount */
+int CatoptricRow::fsmAckCount() {
+	return fsm.ackCount;
+}
+
+/* Get the CatoptricRow's rowNumber */
 int CatoptricRow::getRowNumber() {
     return rowNumber;
 }
+

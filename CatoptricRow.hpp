@@ -7,6 +7,7 @@
 #define FLUSH_IN_OUT 2
 #define NUM_MSG_ELEMS 8
 #define NUM_MOTORS 2
+#define SETUP_SLEEP_TIME 2
 
 #define MSG_MAGIC_NUM '!'
 #define ACK_KEY 'A'
@@ -18,52 +19,61 @@
 #define PAN_IND 0
 #define TILT_IND 1
 
+/* Encodes the state of mirror motors unit */
 struct MotorState {
     int motor[2];
 
     MotorState();
-    MotorState(int pan_in, int tilt_in);
+    MotorState(int panIn, int tiltIn);
 };
 
+/* Encodes a message to be sent to an Arduino */
 struct Message {
-    int row_num;
-    int mirror_id, which_motor, direction, new_pos;
+
+    int row_num, mirror_id, which_motor, direction, new_pos;
     int count_high, count_low;
 
     Message(int row_in, int mirror_in, int motor_in, int dir_in, 
             int chigh_in, int clow_in);
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
-    Message();
 
     std::vector<char> to_vec(); 
 };
 
+/* Encodes the state of a row of mirrors/motors and the corresponding Arduino */
 class CatoptricRow {
 
     private:
+        // File descriptor of serial port written to for its Arduino
         int serial_fd;
         int rowNumber, numMirrors;
-        std::vector<MotorState> motor_states;
+        // Vector of the current (theoretical) orientations for
+        // each subordinate motor
+        std::vector<MotorState> motorStates;
 
-        int _setup(const char *serial_port_in);
+        int setup(const char *serial_port_in);
         void step_motor(int mirror_id, int which_motor, int direction, 
                 float delta_pos); 
         void sendMessageToArduino(Message message);
 
 
     public:
+
+        // Queue of pending Message objects to be transmitted to Arduino
+        std::vector<Message> commandQueue;
+        // FSM controlling this Arduino
+        SerialFSM fsm;
+
         CatoptricRow();
         CatoptricRow(int rowNumber_in, int numMirrors_in, 
-                const char *serial_port_in); 
+                const char *serial_port_in);
+
 	    void reset();
         void update();
         int resetSerialBuffer();
         int getRowNumber();
-        int getCurrentCommandsOut(); 
-        int getCurrentNackCount();
-        int getCurrentAckCount();
+        int fsmCommandsOut(); 
+        int fsmNackCount();
+        int fsmAckCount();
 	    void reorientMirrorAxis(Message command); 
-
-        std::vector<Message> commandQueue;
-        SerialFSM fsm;
 };

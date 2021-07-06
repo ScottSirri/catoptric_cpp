@@ -5,8 +5,7 @@
 #include <stdio.h>      // snprintf
 #include <sstream>
 #include <fstream>
-#include <thread>         // std::this_thread::sleep_for
-#include <chrono>         // std::chrono::seconds
+#include <unistd.h>
 #include <cstring>  // #include <string>
 #include <cerrno>   // #include <errno.h>
 #include "CatoptricRow.hpp"
@@ -69,7 +68,6 @@ void SerialPortDict::addPort(SerialPort port) {
 CatoptricSurface::CatoptricSurface() {
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
-    //rowInterfaces = CatoptricRow[NUM_ROWS];
 
     serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
     serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
@@ -321,15 +319,14 @@ void CatoptricSurface::run() {
         int commandsQueue = 0, ackCount = 0, nackCount = 0;
         
         for(CatoptricRow& cr : rowInterfaces) {
-            commandsOut += cr.getCurrentCommandsOut();
-            ackCount += cr.getCurrentAckCount();
-            nackCount += cr.getCurrentNackCount();
+            commandsOut += cr.fsmCommandsOut();
+            ackCount += cr.fsmAckCount();
+            nackCount += cr.fsmNackCount();
             commandsQueue += cr.commandQueue.size();
         }
 
         updates++;
-        // TODO : Is this a safe way to sleep?
-        this_thread::sleep_for (chrono::seconds(1)); 
+        sleep(SLEEP_TIME);
         printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
                 "| %d cycles \r", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
@@ -342,5 +339,4 @@ void CatoptricSurface::run() {
         printf("\n\n");
     }
 }
-
 
