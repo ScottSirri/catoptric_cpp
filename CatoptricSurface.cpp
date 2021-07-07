@@ -6,8 +6,8 @@
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
-#include <cstring>  // #include <string>
-#include <cerrno>   // #include <errno.h>
+#include <string>  // #include <string>
+#include <errno.h>   // #include <errno.h>
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
 

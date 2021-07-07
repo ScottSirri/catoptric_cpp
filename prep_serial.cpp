@@ -1,15 +1,8 @@
+
 /* Must first execute 'sudo adduser $USER dialout' on Pi
  */
 
-#include <termios.h>
-#include <cstdio>
-#include <cstring>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
 #include "prep_serial.hpp"
-
-
 
 /* Takes a string containing the serial port to be configured.
  * Creates a termios struct, configures it for output, 
@@ -21,10 +14,6 @@ int prep_serial(const char *port_str) {
     if(serial_port < 0) {
         printf("Error opening serial port %s: %s\n", port_str, strerror(errno));
     }
-
-    /*const char add_user_cmd[] = "sudo adduser $USER dialout";
-    if(system(add_user_cmd)
-    */
 
     struct termios tty;
     // Retrieve current termios configs

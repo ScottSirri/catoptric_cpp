@@ -83,11 +83,16 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 /* Prepare the correpsonding serial port for IO (termios).
  */
 int CatoptricRow::setup(const char *serialPortIn) {
-    serial_fd = prep_serial(serialPortIn); // Returns open fd for serial port
+    
+    // Returns fd for configured serial port
+    serial_fd = prep_serial(serialPortIn); 
+    
+    // Flush residual data in buffer
     if(tcflush(serial_fd, TCIOFLUSH) < 0) {
         printf("tcflush error: %s\n", strerror(errno));
         return ERR_TCFLUSH;
     }
+    
     sleep(SETUP_SLEEP_TIME); // Why does this sleep?
 
     return RET_SUCCESS;
