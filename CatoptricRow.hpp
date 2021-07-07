@@ -39,6 +39,7 @@ struct Message {
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
 
     std::vector<char> toVec(); 
+    std::string toStr();
 };
 
 /* Encodes the state of a row of mirrors/motors and the corresponding Arduino */

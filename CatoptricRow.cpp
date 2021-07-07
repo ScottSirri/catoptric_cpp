@@ -42,20 +42,25 @@ Message::Message(int mirrorRow, int mirrorColumn, int motorNumber,
  */
 vector<char> Message::toVec() {
 
-    string str;
+    string str = toStr();
+    vector<char> msgVec(str.begin(), str.end());
 
+    return msgVec;
+}
+
+string Message::toStr() {
+
+    string str;
     try {
         str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
             to_string(rowNum) + to_string(mirrorID) + to_string(whichMotor) +
             to_string(direction) + to_string(countHigh) + to_string(countLow);
     } catch (...) {
         printf("to_string error: %s\n", strerror(errno));
-        return vector<char>();
+        return string();
     }
 
-    vector<char> msgVec(str.begin(), str.end());
-
-    return msgVec;
+    return str;
 }
 
 CatoptricRow::CatoptricRow() {}
@@ -162,7 +167,10 @@ void CatoptricRow::sendMessageToArduino(Message message) {
         }
     }
 
-	fsm.currentCommandsToArduino += 1;
+    printf("Successfully sent message to Arduino:%s\n", 
+            message.toStr().c_str());
+
+	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
 }
 
 /* Push a Message onto the commandQueue and update motorStates. 
@@ -196,8 +204,9 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
  */
 void CatoptricRow::reset() {
 	for(int i = 0; i < numMirrors; ++i) {
-		stepMotor(i+1, 1, 0, 200);
-		stepMotor(i+1, 0, 0, 200);
+        // Column numbers seem to not be 0-indexed on the Arduino?
+		stepMotor(i + 1, 1, 0, 200);
+		stepMotor(i + 1, 0, 0, 200);
 		motorStates[i].motor[PAN_IND] = 0;
 		motorStates[i].motor[TILT_IND] = 0;
     }
