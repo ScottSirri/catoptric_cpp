@@ -1,26 +1,30 @@
 /*
- * This class represents the FSM for a Raspberry Pi managing an Arduino
+ * This class implements the FSM per Arduino on a Pi. Keeps track of the Pi's
+ * state in the process of receiving data from the Arduino-- namely, acks and
+ * debug messages at this point.
  */
 
-#include <stdio.h>
 #include "SerialFSM.hpp"
 
-SerialFSM::SerialFSM(const char *name_in) {
+SerialFSM::SerialFSM(string name_in) {
+
     name = name_in;
+    
     currentCommandsToArduino = 0;
     nackCount = 0;
     ackCount = 0;
-
     currentState = 0;
+
     resetVariables();
 }
 
 SerialFSM::SerialFSM() {
+    
     currentCommandsToArduino = 0;
     nackCount = 0;
     ackCount = 0;
-
     currentState = 0;
+
     resetVariables();
 }
 
@@ -85,20 +89,25 @@ void SerialFSM::Execute(char c) {
 
 
 void SerialFSM::resetVariables() {
+
     ackX = 0;
     ackY = 0;
     ackM = 0;
     countHigh = 0;
     countLow = 0;
     count = 0;
-    messageEnd = message;
-    *messageEnd = '\0';
-    messageReady = false; 
+
+    clearMsg(); 
 }
 
-void SerialFSM::clearMessage() {
-    messageEnd = message;
-    *messageEnd = '\0';
+void SerialFSM::clearMsg() {
+
+    if(message != NULL) {
+        free(message);
+        message = NULL;
+        messageEnd = message;
+    }
+
     messageReady = false;
 }
 
@@ -113,7 +122,6 @@ char SerialFSM::getMagicNum(char c) {
     
 char SerialFSM::getKey(char c) {
     if (c == 'a') {
-        currentCommandsToArduino -= 1;
         ackCount += 1;
         return GET_ACK_KEY;
     } else if (c == 'b') {
@@ -155,6 +163,7 @@ char SerialFSM::getAckY(char c) {
 char SerialFSM::getAckM(char c) {
     if (c <= 2) {
         ackM = c;
+        currentCommandsToArduino -= 1; // Successful ack completed
         return GET_MAGIC_NUM;
     } else {
         return GET_MAGIC_NUM;
@@ -167,24 +176,31 @@ char SerialFSM::getNumCharHigh(char c) {
 }
 
 char SerialFSM::getNumCharLow(char c) {
+
     countLow = c;
     count = (countHigh << 8) + countLow;
+
+    clearMsg(); // Avoid leak
+
+    message = calloc(count + 2); // Null term + safety buffer character
     messageEnd = message;
+
     return GET_CHAR;
 }
 
 char SerialFSM::getChar(char c) {
-    if (count <= 1) {
+
+    if(count > 1) {
+        *messageEnd = c;
+        messageEnd++;
+        count -= 1;
+        return GET_CHAR;
+    } else {
         *messageEnd = c;
         messageEnd++;
         *messageEnd = '\0';
         messageReady = true;
         return GET_MAGIC_NUM;
-    } else {
-        *messageEnd = c;
-        messageEnd++;
-        count -= 1;
-        return GET_CHAR;
     }
 }
 

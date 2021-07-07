@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdio.h>
+#include <string>
+
 #define MAX_MSG_LEN 255
 
 // Define FSM states
@@ -17,11 +20,12 @@
 class SerialFSM {
 
     public:
-        const char *name; // TODO: unknown purpose?
+        string name; // TODO: unknown purpose?
         // messageEnd points to the null terminator of message string
         char message[MAX_MSG_LEN], *messageEnd; 
         int messageReady;
-        // TODO: unknown purpose? Is need in CatoptricRow.cpp
+        // I think this is the number of commands sent to the Arduino that 
+        // haven't been ack'd yet
         int currentCommandsToArduino; 
         int nackCount, ackCount;
         // Character count for message, temporary vars
@@ -29,11 +33,11 @@ class SerialFSM {
         int ackX, ackY, ackM; // Ack vars for X, Y, and Mirror
         int currentState;
 
-        SerialFSM(const char *name_in);
+        SerialFSM(string name_in);
         SerialFSM();
         void Execute(char c); 
         void resetVariables();
-        void clearMessage();
+        void clearMsg();
 
     private:
         char getMagicNum(char c);
