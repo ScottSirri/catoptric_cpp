@@ -21,33 +21,33 @@ MotorState::MotorState(int panIn, int tiltIn) {
 
 Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
         int chigh_in, int clow_in) {
-    row_num = row_in;
-    mirror_id = mirror_in;
-    which_motor = motor_in;
+    rowNum = row_in;
+    mirrorID = mirror_in;
+    whichMotor = motor_in;
     direction = dir_in;
-    count_high = chigh_in;
-    count_low = clow_in;
+    countHigh = chigh_in;
+    countLow = clow_in;
 }
 
 Message::Message(int mirrorRow, int mirrorColumn, int motorNumber, 
         int position) {
-    row_num = mirrorRow;
-    mirror_id = mirrorColumn;
-    which_motor = motorNumber;
-    new_pos = position;
+    rowNum = mirrorRow;
+    mirrorID = mirrorColumn;
+    whichMotor = motorNumber;
+    newPos = position;
 }
 
 /* Convert the message into a serialized byte vector that can be sent to
  * the Arduino.
  */
-vector<char> Message::to_vec() {
+vector<char> Message::toVec() {
 
     string str;
 
     try {
         str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
-            to_string(row_num) + to_string(mirror_id) + to_string(which_motor) +
-            to_string(direction) + to_string(count_high) + to_string(count_low);
+            to_string(rowNum) + to_string(mirrorID) + to_string(whichMotor) +
+            to_string(direction) + to_string(countHigh) + to_string(countLow);
     } catch (...) {
         printf("to_string error: %s\n", strerror(errno));
         return vector<char>();
@@ -120,7 +120,7 @@ void CatoptricRow::update() {
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
-            fsm.clearMessage();
+            fsm.clearMsg();
         }
     }
 
@@ -134,13 +134,15 @@ void CatoptricRow::update() {
 
 /* Push a Message onto the commandQueue to update a mirror's position.
  */
-void CatoptricRow::step_motor(int mirror_id, int which_motor, 
+void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
         int direction, float delta_pos) {
+
 	int delta_pos_int = ((int) delta_pos) * (513.0/360.0);
 	int countLow = ((int) delta_pos_int) & 255;
 	int countHigh = (((int) delta_pos_int) >> 8) & 255;
     
-	Message message (rowNumber, mirror_id, which_motor, direction, 
+    // mirrorID could just as well be named columnNumber
+	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
 	commandQueue.push_back(message);
 }
@@ -149,7 +151,7 @@ void CatoptricRow::step_motor(int mirror_id, int which_motor,
  */
 void CatoptricRow::sendMessageToArduino(Message message) {
 
-    vector<char> message_vec = message.to_vec();
+    vector<char> message_vec = message.toVec();
     char bCurrent;
 
 	for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
@@ -164,13 +166,15 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 }
 
 /* Push a Message onto the commandQueue and update motorStates. 
- * TODO : There may be redundancy between step_motor() and reorientMirrorAxis()?
+ * TODO : There may be redundancy between stepMotor() and reorientMirrorAxis()?
  */
 void CatoptricRow::reorientMirrorAxis(Message command) {
-    int mirror = command.mirror_id;
-    int motor = command.which_motor;
-    int newState = command.new_pos;
-    int currentState = -1;
+
+    int mirror = command.mirrorID;
+    int motor = command.whichMotor;
+    int newState = command.newPos;
+    int currentState = -1; // Placeholder to silence compiler warnings
+
     if(motor == PAN_IND) {
         currentState = motorStates[mirror - 1].motor[PAN_IND];
     } else if(motor == TILT_IND) {
@@ -184,7 +188,7 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
     int direction = delta <  0 ? 1 : 0;
     if(delta < 0) delta *= -1;
 
-    step_motor(mirror, motor, direction, delta);
+    stepMotor(mirror, motor, direction, delta);
     motorStates[mirror - 1].motor[motor] = newState;
 }
 
@@ -192,8 +196,8 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
  */
 void CatoptricRow::reset() {
 	for(int i = 0; i < numMirrors; ++i) {
-		step_motor(i+1, 1, 0, 200);
-		step_motor(i+1, 0, 0, 200);
+		stepMotor(i+1, 1, 0, 200);
+		stepMotor(i+1, 0, 0, 200);
 		motorStates[i].motor[PAN_IND] = 0;
 		motorStates[i].motor[TILT_IND] = 0;
     }

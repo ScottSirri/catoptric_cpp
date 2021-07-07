@@ -16,7 +16,8 @@
 #define ERR_TCFLUSH -2
 #define ERR_WRITE -3
 
-#define PAN_IND 0
+// Indices for values storing orientations of each motor in each mirror unit
+#define PAN_IND  0
 #define TILT_IND 1
 
 /* Encodes the state of mirror motors unit */
@@ -30,14 +31,14 @@ struct MotorState {
 /* Encodes a message to be sent to an Arduino */
 struct Message {
 
-    int row_num, mirror_id, which_motor, direction, new_pos;
-    int count_high, count_low;
+    int rowNum, mirrorID, whichMotor, direction, newPos;
+    int countHigh, countLow;
 
     Message(int row_in, int mirror_in, int motor_in, int dir_in, 
             int chigh_in, int clow_in);
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
 
-    std::vector<char> to_vec(); 
+    std::vector<char> toVec(); 
 };
 
 /* Encodes the state of a row of mirrors/motors and the corresponding Arduino */
@@ -52,7 +53,7 @@ class CatoptricRow {
         std::vector<MotorState> motorStates;
 
         int setup(const char *serial_port_in);
-        void step_motor(int mirror_id, int which_motor, int direction, 
+        void stepMotor(int mirrorID, int whichMotor, int direction, 
                 float delta_pos); 
         void sendMessageToArduino(Message message);
 

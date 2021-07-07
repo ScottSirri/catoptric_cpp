@@ -2,8 +2,7 @@
 
 #include <stdio.h>
 #include <string>
-
-#define MAX_MSG_LEN 255
+#include <stdlib.h>
 
 // Define FSM states
 #define GET_MAGIC_NUM 0
@@ -20,9 +19,9 @@
 class SerialFSM {
 
     public:
-        string name; // TODO: unknown purpose?
+        std::string name; // TODO: unknown purpose?
         // messageEnd points to the null terminator of message string
-        char message[MAX_MSG_LEN], *messageEnd; 
+        char *message, *messageEnd; 
         int messageReady;
         // I think this is the number of commands sent to the Arduino that 
         // haven't been ack'd yet
@@ -33,7 +32,7 @@ class SerialFSM {
         int ackX, ackY, ackM; // Ack vars for X, Y, and Mirror
         int currentState;
 
-        SerialFSM(string name_in);
+        SerialFSM(std::string name_in);
         SerialFSM();
         void Execute(char c); 
         void resetVariables();

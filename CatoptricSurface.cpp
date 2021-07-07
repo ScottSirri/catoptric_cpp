@@ -1,13 +1,12 @@
 #include <iostream>
 #include <algorithm>    // transform
-#include <filesystem>
 #include <stdlib.h>
 #include <stdio.h>      // snprintf
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
-#include <string>  // #include <string>
-#include <errno.h>   // #include <errno.h>
+#include <string>
+#include <errno.h> 
 #include "CatoptricRow.hpp"
 #include "CatoptricSurface.hpp"
 

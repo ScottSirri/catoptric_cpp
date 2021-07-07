@@ -6,6 +6,8 @@
 
 #include "SerialFSM.hpp"
 
+using namespace std;
+
 SerialFSM::SerialFSM(string name_in) {
 
     name = name_in;
@@ -182,7 +184,7 @@ char SerialFSM::getNumCharLow(char c) {
 
     clearMsg(); // Avoid leak
 
-    message = calloc(count + 2); // Null term + safety buffer character
+    message = (char *) calloc(count + 2, sizeof(char)); // Null term + safety buffer character
     messageEnd = message;
 
     return GET_CHAR;
