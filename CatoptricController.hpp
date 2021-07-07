@@ -1,6 +1,8 @@
 #include <vector>
 #include <string>
 
+#define STR_EQUAL 0
+
 class CatoptricController {
 
     private:

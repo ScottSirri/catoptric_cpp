@@ -1,4 +1,6 @@
 
+#include "CatoptricController.hpp"
+
 CatoptricController::CatoptricController() {
     surface = CatoptricSurface();
 }
@@ -73,13 +75,15 @@ void CatoptricController::run() {
         printf("%s", inputMessage.c_str());
         cin >> userInput;
         printf("\n\n");
-        //userInput = tolower(userInput);
+
+        // Transform user input to lowercase characters
         transform(userInput.begin(), userInput.end(), 
                 userInput.begin(), ::tolower);
+
         if(0 == userInput.compare("reset")) {
             surface.reset();
             printf(" -- Reset Complete\n");
-        } else if(csvList.size() > 0 && 0 == userInput.compare("run")) {
+        } else if(csvList.size() > 0 && userInput.compare("run") == STR_EQUAL) {
             printf(" -- Running \'%s\'\n", csv.c_str());
             surface.updateByCSV(csv); // TODO : Need to alter csv before?
             printf(" -- \'%s\' ran successfully\n", csv.c_str());
@@ -105,14 +109,11 @@ void CatoptricController::run() {
                 archiveLength = extractFirstIntFromFile(fs);
             }
 
-            if(archiveLength == ERR_NO_INT ||
-                    archiveLength == ERR_STOI) return;
+            if(archiveLength == ERR_NO_INT || archiveLength == ERR_STOI) return;
 
+            // Rename + move CSV file to archive
             string newName = "./csv/archive/" + to_string(archiveLength) + 
                 "_" + csv;
-            /* os.rename(csv, newName)
-             * Execute system call 'mv %s %s' w str formatting for csv, newName
-             */
             string mov_cmd = "mov " + csv + " " + newName;
             if(system(mov_cmd.c_str()) != SYSTEM_SUCCESS) {
                 printf("Error in system function for command \'%s\': %s\n", 

@@ -34,7 +34,7 @@ SerialPort::SerialPort(string numIn, int rowIn) {
     device = string();
 }
 
-/* Returns the name of the port with the passed order integer,
+/* Returns the name of the port with the passed row number,
  * if any. Returns empty string otherwise.
  */
 string SerialPortDict::getSerialNumber(int row) {
@@ -45,7 +45,7 @@ string SerialPortDict::getSerialNumber(int row) {
     return string();
 }
 
-/* Returns the order integer for the serial port associated
+/* Returns the row number for the serial port associated
  * with the passed name. Returns ERR_QUERY_FAILED otherwise.
  */
 int SerialPortDict::getRow(string serialNumber) {

@@ -47,8 +47,8 @@ class CatoptricRow {
         // File descriptor of serial port written to for its Arduino
         int serial_fd;
         int rowNumber, numMirrors;
-        // Vector of the current (theoretical) orientations for
-        // each subordinate motor
+        /* Vector of the current (theoretical) orientations for
+           each subordinate motor */
         std::vector<MotorState> motorStates;
 
         int setup(const char *serial_port_in);
