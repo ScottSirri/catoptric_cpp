@@ -42,8 +42,8 @@ Message::Message(int mirrorRow, int mirrorColumn, int motorNumber,
  */
 vector<char> Message::toVec() {
 
-    string str = toStr();
-    vector<char> msgVec(str.begin(), str.end());
+    string msgStr = toStr();
+    vector<char> msgVec(msgStr.begin(), msgStr.end());
 
     return msgVec;
 }
@@ -140,11 +140,12 @@ void CatoptricRow::update() {
 /* Push a Message onto the commandQueue to update a mirror's position.
  */
 void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
-        int direction, float delta_pos) {
+        int direction, float deltaPos) {
 
-	int delta_pos_int = ((int) delta_pos) * (513.0/360.0);
-	int countLow = ((int) delta_pos_int) & 255;
-	int countHigh = (((int) delta_pos_int) >> 8) & 255;
+    // I assume there's 513 steps in the motor?
+	int deltaPosInt = (int) (deltaPos * (513.0/360.0));
+	int countLow = ((int) deltaPosInt) & 255;
+	int countHigh = (((int) deltaPosInt) >> 8) & 255;
     
     // mirrorID could just as well be named columnNumber
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
