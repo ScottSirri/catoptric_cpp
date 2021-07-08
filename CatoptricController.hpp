@@ -11,5 +11,7 @@ class CatoptricController {
         CatoptricController();
 
         std::vector<std::string> checkForNewCSV();
+
+    public:
         void run();
 };
