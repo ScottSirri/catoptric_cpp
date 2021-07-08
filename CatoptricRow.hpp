@@ -3,18 +3,18 @@
 #include <vector>
 #include "SerialFSM.hpp"
 
-#define MAX_CMDS_OUT 2
-#define FLUSH_IN_OUT 2
+#define MAX_CMDS_OUT  2
+#define FLUSH_IN_OUT  2
 #define NUM_MSG_ELEMS 8
-#define NUM_MOTORS 2
+#define NUM_MOTORS    2
 #define SETUP_SLEEP_TIME 2
 
 #define MSG_MAGIC_NUM '!'
 #define ACK_KEY 'A'
 
-#define RET_SUCCESS 0
+#define RET_SUCCESS  0
 #define ERR_TCFLUSH -2
-#define ERR_WRITE -3
+#define ERR_WRITE   -3
 
 // Indices for values storing orientations of each motor in each mirror unit
 #define PAN_IND  0
@@ -53,7 +53,7 @@ class CatoptricRow {
            each subordinate motor */
         std::vector<MotorState> motorStates;
 
-        int setup(const char *serial_port_in);
+        int setupSerial(const char *serial_port_in);
         void stepMotor(int mirrorID, int whichMotor, int direction, 
                 float delta_pos); 
         void sendMessageToArduino(Message message);

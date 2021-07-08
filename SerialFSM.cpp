@@ -30,6 +30,8 @@ SerialFSM::SerialFSM() {
     resetVariables();
 }
 
+/* FSM control logic function.
+ */
 void SerialFSM::Execute(char c) {
     switch(currentState) {
         case GET_MAGIC_NUM:
@@ -102,14 +104,16 @@ void SerialFSM::resetVariables() {
     clearMsg(); 
 }
 
+/* Clear any currently cached message, including deallocation of its memory. 
+ */
 void SerialFSM::clearMsg() {
 
     if(message != NULL) {
         free(message);
         message = NULL;
-        messageEnd = message;
     }
 
+    messageEnd = message;
     messageReady = false;
 }
 
@@ -184,7 +188,8 @@ char SerialFSM::getNumCharLow(char c) {
 
     clearMsg(); // Avoid leak
 
-    message = (char *) calloc(count + 2, sizeof(char)); // Null term + safety buffer character
+    // Null term + safety buffer character
+    message = (char *) calloc(count + 2, sizeof(char)); 
     messageEnd = message;
 
     return GET_CHAR;

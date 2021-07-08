@@ -1,3 +1,4 @@
+#include "CatoptricRow.hpp"
 #include "SerialFSM.hpp"
 #include "prep_serial.hpp"
 #include <sys/ioctl.h>
@@ -5,7 +6,6 @@
 #include <termios.h>
 #include <vector>
 #include <unistd.h>
-#include "CatoptricRow.hpp"
 
 using namespace std;
 
@@ -48,6 +48,8 @@ vector<char> Message::toVec() {
     return msgVec;
 }
 
+/* Convert the Message object into a string containing what will be transmitted.
+ */
 string Message::toStr() {
 
     string str;
@@ -71,23 +73,24 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 	rowNumber = rowNumberIn;
 	numMirrors = numMirrorsIn;
 
-	// Init Motor States
+	// Initalize a MotorState object for each motor
 	for(int i = 0; i < numMirrors; ++i) {
         MotorState state = MotorState();
 	    motorStates.push_back(state);
     }
 
-	// Setup Serial
-	setup(serialPortIn);
+	// Configure the relevant serial port for communication
+	setupSerial(serialPortIn);
 
-    string row_str = to_string(rowNumber);
-    const char *row_cstr = row_str.c_str();
-	fsm = SerialFSM(row_cstr);
+    // Create FSM for communication with this Arduino.
+    string rowStr = to_string(rowNumber);
+    const char *rowCStr = rowStr.c_str();
+	fsm = SerialFSM(rowCStr);
 }
 
 /* Prepare the correpsonding serial port for IO (termios).
  */
-int CatoptricRow::setup(const char *serialPortIn) {
+int CatoptricRow::setupSerial(const char *serialPortIn) {
     
     // Returns fd for configured serial port
     serial_fd = prep_serial(serialPortIn); 
@@ -98,7 +101,7 @@ int CatoptricRow::setup(const char *serialPortIn) {
         return ERR_TCFLUSH;
     }
     
-    sleep(SETUP_SLEEP_TIME); // Why does this sleep?
+    sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
 
     return RET_SUCCESS;
 }
@@ -137,22 +140,6 @@ void CatoptricRow::update() {
     }
 }
 
-/* Push a Message onto the commandQueue to update a mirror's position.
- */
-void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
-        int direction, float deltaPos) {
-
-    // I assume there's 513 steps in the motor?
-	int deltaPosInt = (int) (deltaPos * (513.0/360.0));
-	int countLow = ((int) deltaPosInt) & 255;
-	int countHigh = (((int) deltaPosInt) >> 8) & 255;
-    
-    // mirrorID could just as well be named columnNumber
-	Message message (rowNumber, mirrorID, whichMotor, direction, 
-            countHigh, countLow);
-	commandQueue.push_back(message);
-}
-
 /* Transmit the passed Message to the Arduino.
  */
 void CatoptricRow::sendMessageToArduino(Message message) {
@@ -174,15 +161,32 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
 }
 
+/* Push a Message onto the commandQueue to update a mirror's position.
+ */
+void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
+        int direction, float deltaPos) {
+
+    // I assume there's 513 steps in the motor?
+	int deltaPosInt = (int) (deltaPos * (513.0/360.0));
+	int countLow = ((int) deltaPosInt) & 255;
+	int countHigh = (((int) deltaPosInt) >> 8) & 255;
+    
+    // mirrorID could just as well be named columnNumber
+	Message message (rowNumber, mirrorID, whichMotor, direction, 
+            countHigh, countLow);
+	commandQueue.push_back(message);
+}
+
 /* Push a Message onto the commandQueue and update motorStates. 
- * TODO : There may be redundancy between stepMotor() and reorientMirrorAxis()?
+ * TODO : There may be functional redundancy between stepMotor() and 
+ *        reorientMirrorAxis()?
  */
 void CatoptricRow::reorientMirrorAxis(Message command) {
 
     int mirror = command.mirrorID;
     int motor = command.whichMotor;
     int newState = command.newPos;
-    int currentState = -1; // Placeholder to silence compiler warnings
+    int currentState = -1; // Placeholder value to silence compiler warnings
 
     if(motor == PAN_IND) {
         currentState = motorStates[mirror - 1].motor[PAN_IND];

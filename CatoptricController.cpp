@@ -5,21 +5,27 @@ CatoptricController::CatoptricController() {
     surface = CatoptricSurface();
 }
 
+/* Check csv/new directory for any newly deposited CSVs.
+ * Uses 'system' function to execute command-line instructions for filesystem
+ * inspection.
+ */
 vector<string> CatoptricController::checkForNewCSV() {
-    string directoryStr = "csv/new";
-    vector<string> newCSVs;
 
-    string csv_ending = ".csv";
+    // Create file listing contents of csv/new
+    string directoryStr = "csv/new";
     string ls_cmd = "ls " + directoryStr + " > " + LS_CSV_FILENAME;
     int ret;
-    // For each file in directory LS_CSV_FILENAME (csv/new)
     if((ret = system(ls_cmd.c_str())) != SYSTEM_SUCCESS) {
         printf("System function error: return  %d, %s\n", ret, strerror(errno));
     }
 
     ifstream ls_file_stream;
-    ls_file_stream.open(LS_CSV_FILENAME, ios_base::in);
     string ls_line;
+    string csv_ending = ".csv";
+    vector<string> newCSVs;
+
+    ls_file_stream.open(LS_CSV_FILENAME, ios_base::in);
+    
     while(ls_file_stream.good() && !ls_file_stream.eof() && 
             getline(ls_file_stream, ls_line)) {
         // If line from ls ends in ".csv"
