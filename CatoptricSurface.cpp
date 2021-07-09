@@ -64,6 +64,66 @@ void SerialPortDict::addPort(SerialPort port) {
     dict.push_back(port);
 }
 
+/* Reads file containing surface dimensions and initializes the corresponding
+ * vector with row lengths.
+ * File containing surface dimensions (row lengths) is formatted as intervals
+ * of row numbers, each interval associated with a row length (conducive to
+ * rectangular-ish arrays).
+ *      Two integers (separated by a space) per line.
+ *      First integer is the last (one-indexed) row number in that interval.
+ *          The first row number in that interval is implicitly one greater than
+ *          the end of the previous interval (first interval starts at 1).
+ *          Both bounds are INCLUSIVE.
+ *      Second integer is the length of that row.
+ */
+int SurfaceDimensions::initDimensions(string filePath) {
+
+    defaultRowLen = DEFAULT_ROW_LEN;
+    ifstream dimensionsFile(filePath);
+
+    if(dimensionsFile) {
+
+        string dimensionsLine;
+        int rowNumStart = 1, rowNumEnd, rowLen;
+
+        while(getline(dimensionsFile, dimensionsLine)) {
+            
+            istringstream iss(dimensionsLine);
+
+            try {
+                iss >> rowNumEnd;
+                iss >> rowLen;
+            } catch(...) {
+                printf("istringstream error- invalid dimensions file contents: "
+                        "%s\n", strerror(errno));
+                return ERR_DIMS_FILE;
+            }
+
+            // Requires space linear in # rows, but easy indexing operation
+            for(int i = 0; i < rowNumEnd - rowNumStart + 1; ++i) {
+                rowLengths.push_back(rowLen);
+            }
+
+            rowNumStart = rowNumEnd + 1;
+        }
+    }
+
+    dimensionsFile.close();
+
+    return RET_SUCCESS;
+}
+
+/* Returns the length of the row with the passed row number.
+ * Row numbers are ONE-INDEXED! (not my fault)
+ */
+int SurfaceDimensions::getLength(int rowNumber) {
+    if(1 <= rowNumber && rowNumber <= rowLengths.size()) {
+        return rowLengths[rowNumber - 1];
+    } else {
+        return defaultRowLen;
+    }
+}
+
 CatoptricSurface::CatoptricSurface() {
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
@@ -89,6 +149,7 @@ CatoptricSurface::CatoptricSurface() {
     serialPorts = getOrderedSerialPorts();
     numRowsConnected = serialPorts.size();
     
+    dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
     reset();
 }
@@ -165,26 +226,14 @@ vector<SerialPort> CatoptricSurface::readSerialPorts() {
  */
 void CatoptricSurface::setupRowInterfaces() {
     for(SerialPort sp : serialPorts) {
-        int row = sp.row;
-        string port = sp.device;
 
-        // Hard-coded dimensions of our catoptric surface
-        int rowLength = 0;
-        if(row >= 1 && row < 12) {
-            rowLength = 16;
-        } else if(row >= 12 && row < 17) {
-            rowLength = 24;
-        } else if(row >= 17 && row < 28) {
-            rowLength = 17;
-        } else if(row >= 28 && row < 33) {
-            rowLength = 25;
-        } else {    // Test setup arduinos
-            rowLength = 2;
-        }
+        string port = sp.device;
+        int rowNum = sp.row;
+        int rowLen = dimensions.getLength(rowNum);
 
 		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
-                row, rowLength);
-	    rowInterfaces[row] = CatoptricRow(row, rowLength, port.c_str());
+                rowNum, rowLen);
+	    rowInterfaces[rowNum] = CatoptricRow(rowNum, rowLen, port.c_str());
     }
 }
 
@@ -207,9 +256,8 @@ void CatoptricSurface::getCSV(string path) {
 
     bool readData = false;
 
-    ifstream fs;
-    fs.open(path.c_str(), ios_base::in);
-    while(fs.good() && !fs.eof()) {
+    ifstream fs(path.c_str());
+    while(fs && !fs.eof()) {
         readData = true;
         // Get vector of next line's elements
         vector<string> nextLinesCells = getNextLineAndSplitIntoTokens(fs);
@@ -219,6 +267,8 @@ void CatoptricSurface::getCSV(string path) {
    }
 
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
+
+   fs.close();
 }
 
 /* Returns a vector of all cells in the next unread line from the CSV

@@ -7,8 +7,11 @@
 #define STR_EQ 0
 #define UNDEF_ORDER -4
 
+#define RET_SUCCESS 0
 #define ERR_QUERY_FAILED -3
+#define ERR_DIMS_FILE -6
 #define ERR_NO_INT -7
+#define ERR_ROW_NUM -8
 #define ERR_STOI -9
 #define NO_DEVICES 512
 #define SERIAL_NUM_LEN 20  /* Number characters in Arduino serial number */
@@ -19,9 +22,12 @@
 #define CMP_EQUAL 0
 #define SLEEP_TIME 1    /* Seconds to sleep per CatoptricSurface::run() cycle */
 
-#define LS_ID_FILENAME ".serialInfo"
-#define LS_WC_FILENAME ".numFiles"
-#define LS_CSV_FILENAME ".csvSearch"
+#define DEFAULT_ROW_LEN 2
+
+#define LS_ID_FILENAME ".serialInfo"    // Arbitrarily named
+#define LS_WC_FILENAME ".numFiles"      // Arbitrarily named
+#define LS_CSV_FILENAME ".csvSearch"    // Arbitrarily named
+#define DIMENSIONS_FILENAME "surface_dimensions"    // Must be present in dir
 #define SERIAL_INFO_PREFIX_MACRO "usb-Arduino__www.arduino.cc__0043_"
 
 struct SerialPort {
@@ -52,6 +58,22 @@ struct serialComp {
     }
 } serialCompObj;
 
+/* Encodes dimensions of surface in the form of map from row number to 
+ * row length.
+ */
+class SurfaceDimensions {
+
+    private:
+        // Number of mirrors in a row, doesn't account for alignment nor spacing
+        std::vector<int> rowLengths;
+        // Typically defaulted to in functional prototype (e.g. 2x2 array)
+        int defaultRowLen;
+
+    public:
+        int initDimensions(std::string filePath);
+        int getLength(int rowNumber);
+};
+
 class CatoptricSurface {
 
     private:
@@ -59,6 +81,8 @@ class CatoptricSurface {
         int numRowsConnected;
         // Hard-coded dictionary of the setup's Arduinos and each serial number
         SerialPortDict serialPortOrder; 
+        // Encodes the dimensions of surface (length of each row)
+        SurfaceDimensions dimensions;
         // Vector of objects, each representing one row in surface
         CatoptricRow rowInterfaces[NUM_ROWS];
         // Vector of objects each representing a serial port open to an Arduino
