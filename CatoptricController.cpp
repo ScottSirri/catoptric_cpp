@@ -1,8 +1,72 @@
 
+/* CatoptricController.cpp
+ * The CatoptricController class defines the event loop for the overall
+ * catoptric lighting system and input processing.
+ * Author: Scott Sirri scottsirri@wustl.edu
+ */
+
+#include <fstream> // ifstream
+#include <iostream> // cin
+#include <sstream> // stringstream
 #include "CatoptricController.hpp"
+
+using namespace std;
 
 CatoptricController::CatoptricController() {
     surface = CatoptricSurface();
+}
+
+/* Repeatedly check for new CSV files and prompt user for input:
+ * either reset the mirrors or execute a new CSV file.
+ */
+void CatoptricController::run() {
+
+    while(CONTROLLER_RUNNING) { // Infinite event loop
+
+        string csv = "";
+        string inputMessage = "\'Reset\' mirrors or upload a file to run: ";
+
+        // Retrieve any new CSV files
+        vector<string> csvList = checkForNewCSV();
+
+        printf("\n-------------------------\n\n");
+
+        if(csvList.size() > 0) {
+            csv = csvList[0];
+            printf(" -- Found csv file \'%s\'\n", csv.c_str());
+            inputMessage = "\'Reset\' mirrors or \'Run\' file: ";
+        }
+
+        string userInput = getUserInput(inputMessage);
+
+        if(userInput.compare("reset") == STR_EQUAL) {
+            surface.reset();
+            printf(" -- Reset Complete\n");
+        } else if(csvList.size() > 0 && userInput.compare("run") == STR_EQUAL) {
+            
+            printf(" -- Running \'%s\'\n", csv.c_str());
+            surface.updateByCSV(csv);
+            printf(" -- \'%s\' ran successfully\n", csv.c_str());
+
+            // Find the number of files in csv/archive
+            string archiveDir = "./csv/archive";
+            int archiveLength = getNumFiles(archiveDir);
+            if(archiveLength < 0) {
+                printf("Error in getNumFiles\n");
+                return;
+            }
+
+            // Rename + move CSV file to csv/archive
+            string newName = "./csv/archive/" + to_string(archiveLength) + 
+                "_" + csv;
+            if(renameMoveFile(csv, newName) < 0) {
+                printf("Error in renameMoveFile\n");
+                return;
+            }
+
+            printf(" -- \'%s\' moved to archive\n", csv.c_str());
+        }
+    }
 }
 
 /* Check csv/new directory for any newly deposited CSVs.
@@ -38,12 +102,59 @@ vector<string> CatoptricController::checkForNewCSV() {
     return newCSVs;
 }
 
+/* Retrieves user input and returns it lowercase.
+ * */
+string CatoptricController::getUserInput(string inputMessage) {
+    string userInput;
+    printf("%s", inputMessage.c_str());
+    cin >> userInput;
+    printf("\n\n");
+
+    // Transform user input to lowercase characters
+    transform(userInput.begin(), userInput.end(), 
+            userInput.begin(), ::tolower);
+    return userInput;
+}
+
+/* Return number of files in passed directory path (or error code).
+ */
+int CatoptricController::getNumFiles(string dir) {
+
+    int dirLength = DIR_LEN_INIT;
+    char ls_wc_cmd[CMD_LEN];
+    snprintf(ls_wc_cmd, CMD_LEN, "ls %s | wc > %s", dir.c_str(), 
+            LS_WC_FILENAME);
+
+    if(system(ls_wc_cmd) != SYSTEM_SUCCESS) {
+        printf("Error in system function for command \'%s\': %s\n", 
+                ls_wc_cmd, strerror(errno));
+        return ERR_SYSTEM;
+    }
+
+    ifstream fs;
+    fs.open(LS_WC_FILENAME, ios_base::in);
+    if(fs.good() && !fs.eof()) {
+        /* First int in output from 'wc' is number lines, i.e. number
+           files listed by ls */
+        dirLength = extractFirstIntFromFile(fs);
+    } else if(fs.fail()) {
+        printf("LS_WC file fail to open: %s\n", strerror(errno));
+        return ERR_FAIL_OPEN;
+    }
+
+    if(dirLength == ERR_NO_INT || dirLength == ERR_STOI) {
+        printf("Error finding number files in dir\n");
+    }
+
+    return dirLength;
+}
+
 /* Extracts the first integer from a file containing only integers (and 
  * whitespace).
  * Exclusively employed on the output of 'wc' command to get the number
  * of lines in another file.
  */
-int extractFirstIntFromFile(istream& filStream) {
+int CatoptricController::extractFirstIntFromFile(istream& filStream) {
 
     string line;
     getline(filStream, line);
@@ -70,84 +181,17 @@ int extractFirstIntFromFile(istream& filStream) {
     return ERR_NO_INT;
 }
 
-/* Repeatedly check for new CSV files and prompt user for input:
- * either reset the mirrors or execute a new CSV file.
+/* Renames and moves the passed src file to dest.
  */
-void CatoptricController::run() {
+int CatoptricController::renameMoveFile(string src, string dest) {
 
-    while(CONTROLLER_RUNNING) { // Infinite loop
-
-        string csv = "";
-        string inputMessage = "\'Reset\' mirrors or upload a file to run: ";
-
-        // Retrieve any new CSV files
-        vector<string> csvList = checkForNewCSV();
-
-        printf("\n-------------------------\n\n");
-
-        if(csvList.size() > 0) {
-            csv = csvList[0];
-            printf(" -- Found csv file \'%s\'\n", csv.c_str());
-            inputMessage = "\'Reset\' mirrors or \'Run\' file: ";
-        }
-
-        string userInput;
-        printf("%s", inputMessage.c_str());
-        cin >> userInput;
-        printf("\n\n");
-
-        // Transform user input to lowercase characters
-        transform(userInput.begin(), userInput.end(), 
-                userInput.begin(), ::tolower);
-
-        if(userInput.compare("reset") == STR_EQUAL) {
-            surface.reset();
-            printf(" -- Reset Complete\n");
-        } else if(csvList.size() > 0 && userInput.compare("run") == STR_EQUAL) {
-            
-            printf(" -- Running \'%s\'\n", csv.c_str());
-            surface.updateByCSV(csv);
-            printf(" -- \'%s\' ran successfully\n", csv.c_str());
-
-            // Find the number of files in csv/archive
-            char ls_wc_cmd[CMD_LEN];
-            snprintf(ls_wc_cmd, CMD_LEN, "ls ./csv/archive | wc > %s", 
-                    LS_WC_FILENAME);
-            if(system(ls_wc_cmd) != SYSTEM_SUCCESS) {
-                printf("Error in system function for command \'%s\': %s\n", 
-                        ls_wc_cmd, strerror(errno));
-                return;
-            }
-
-            int archiveLength = -1;
-            ifstream fs;
-            fs.open(LS_WC_FILENAME, ios_base::in);
-            if(fs.good() && !fs.eof()) {
-                /* First int in output from 'wc' is number lines, i.e. number
-                   files listed by ls */
-                archiveLength = extractFirstIntFromFile(fs);
-            } else if(fs.fail()) {
-                printf("LS_WC file fail to open: %s\n", strerror(errno));
-                return;
-            }
-
-            if(archiveLength == ERR_NO_INT || archiveLength == ERR_STOI) {
-                printf("Error finding number files in csv/archive\n");
-                return;
-            }
-
-            // Rename + move CSV file to csv/archive
-            string newName = "./csv/archive/" + to_string(archiveLength) + 
-                "_" + csv;
-            string mov_cmd = "mov " + csv + " " + newName;
-            if(system(mov_cmd.c_str()) != SYSTEM_SUCCESS) {
-                printf("Error in system function for command \'%s\': %s\n", 
-                        mov_cmd.c_str(), strerror(errno));
-                return;
-                
-            }
-
-            printf(" -- \'%s\' moved to archive\n", csv.c_str());
-        }
+    string mov_cmd = "mov " + src + " " + dest;
+    if(system(mov_cmd.c_str()) != SYSTEM_SUCCESS) {
+        printf("Error in system function for command \'%s\': %s\n", 
+                mov_cmd.c_str(), strerror(errno));
+        return ERR_SYSTEM;
     }
+
+    return RET_SUCCESS;
 }
+

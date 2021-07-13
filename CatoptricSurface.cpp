@@ -1,20 +1,27 @@
-#include <iostream>
-#include <algorithm>    // transform
+
+#include <algorithm> // sort
 #include <stdlib.h>
 #include <stdio.h>      // snprintf
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
-#include <string>
 #include <errno.h> 
-#include "CatoptricRow.hpp"
+    
 #include "CatoptricSurface.hpp"
+#include "ErrCodes.hpp"
 
 using namespace std;
 
 int main() {
     return 0;
 }
+
+struct serialComp {
+    // Used to sort serial ports by their Arduino's serial number
+    bool operator() (SerialPort a, SerialPort b) {
+        return a.serialNumber.compare(b.serialNumber) < 0;
+    }
+} serialCompObj;
 
 SerialPort::SerialPort() {
     serialNumber = string();
@@ -388,4 +395,3 @@ void CatoptricSurface::run() {
         printf("\n\n");
     }
 }
-

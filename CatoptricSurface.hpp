@@ -1,18 +1,13 @@
 #pragma once
 
+#include <string>
+
 #include "CatoptricRow.hpp"
 #include "SerialFSM.hpp"
-#include <string>
 
 #define STR_EQ 0
 #define UNDEF_ORDER -4
 
-#define RET_SUCCESS 0
-#define ERR_QUERY_FAILED -3
-#define ERR_DIMS_FILE -6
-#define ERR_NO_INT -7
-#define ERR_ROW_NUM -8
-#define ERR_STOI -9
 #define NO_DEVICES 512
 #define SERIAL_NUM_LEN 20  /* Number characters in Arduino serial number */
 #define NUM_ROWS 32
@@ -50,13 +45,6 @@ class SerialPortDict {
         int getRow(std::string serialNumber);
         void addPort(SerialPort port);
 };
-
-struct serialComp {
-    // Used to sort serial ports by their Arduino's serial number
-    bool operator() (SerialPort a, SerialPort b) {
-        return a.serialNumber.compare(b.serialNumber) < 0;
-    }
-} serialCompObj;
 
 /* Encodes dimensions of surface in the form of map from row number to 
  * row length.

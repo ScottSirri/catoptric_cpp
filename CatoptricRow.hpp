@@ -12,10 +12,6 @@
 #define MSG_MAGIC_NUM '!'
 #define ACK_KEY 'A'
 
-#define RET_SUCCESS  0
-#define ERR_TCFLUSH -2
-#define ERR_WRITE   -3
-
 // Indices for values storing orientations of each motor in each mirror unit
 #define PAN_IND  0
 #define TILT_IND 1

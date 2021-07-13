@@ -1,5 +1,7 @@
+out_name = catoptric_out
+
 makecat: CatoptricSurface.cpp CatoptricRow.cpp prep_Serial.cpp SerialFSM.cpp
-	g++ -Wall --std=c++11 CatoptricSurface.cpp CatoptricRow.cpp prep_serial.cpp SerialFSM.cpp -o catout
+	g++ -Wall --std=c++11 CatoptricController.cpp CatoptricSurface.cpp CatoptricRow.cpp prep_serial.cpp SerialFSM.cpp -o $(out_name)
 
 clean:
-	rm catout 2> /dev/null
+	rm $(out_name) 2> /dev/null

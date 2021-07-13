@@ -1,8 +1,6 @@
 #pragma once
 
-#include <stdio.h>
 #include <string>
-#include <stdlib.h>
 
 // Define FSM states
 #define GET_MAGIC_NUM 0

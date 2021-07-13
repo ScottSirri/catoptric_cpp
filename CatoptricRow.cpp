@@ -1,11 +1,14 @@
-#include "CatoptricRow.hpp"
-#include "SerialFSM.hpp"
-#include "prep_serial.hpp"
+
 #include <sys/ioctl.h>
 #include <string>
 #include <termios.h>
 #include <vector>
 #include <unistd.h>
+
+#include "CatoptricRow.hpp"
+#include "SerialFSM.hpp"
+#include "prep_serial.hpp"
+#include "ErrCodes.hpp"
 
 using namespace std;
 
